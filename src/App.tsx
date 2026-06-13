@@ -7,7 +7,7 @@ import TheatricalSection from './components/TheatricalSection'
 import WeatherStrip from './components/WeatherStrip'
 import { useAuth } from './auth/AuthContext'
 import { useDashboardData } from './hooks/useDashboardData'
-import { familyMembers, mockEvents } from './data/mock'
+import { familyMembers } from './data/mock'
 import type { ClientPrincipal } from './auth/client'
 
 function todayLabel(): string {
@@ -19,8 +19,7 @@ function todayLabel(): string {
 }
 
 function Dashboard({ user }: { user: ClientPrincipal }) {
-  // Calendar events remain mock for now (no calendar API yet).
-  const { weather, news, streaming, theatrical } = useDashboardData()
+  const { calendar, weather, news, streaming, theatrical } = useDashboardData()
 
   return (
     <div className="app">
@@ -49,7 +48,7 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
       <WeatherStrip members={familyMembers} weather={weather} />
 
       <div className="grid grid-main">
-        <CalendarCard events={mockEvents} />
+        <CalendarCard events={calendar} />
         <NewsCard items={news} />
       </div>
 

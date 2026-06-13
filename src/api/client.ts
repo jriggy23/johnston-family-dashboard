@@ -5,6 +5,7 @@
 // tested without the network.
 
 import type {
+  CalendarEvent,
   FamilyMember,
   NewsItem,
   StreamingTitle,
@@ -119,4 +120,74 @@ export function mapTheatrical(
 export async function fetchTheatrical(): Promise<TheatricalRelease[]> {
   const data = await getJson<TheatricalResponse>('/api/theatrical')
   return mapTheatrical(data.releases)
+}
+
+// --- Calendar (iCloud via CalDAV through /api/calendar) ---
+
+interface CalendarResponse {
+  source: string
+  events: {
+    id: string
+    title: string
+    start: string // ISO
+    allDay: boolean
+    location?: string
+    color?: string
+  }[]
+}
+
+const DEFAULT_EVENT_COLOR = '#378add'
+
+// iCloud returns colors as 8-digit #RRGGBBAA; normalize to #RRGGBB.
+function normalizeColor(color?: string): string {
+  if (!color) return DEFAULT_EVENT_COLOR
+  return /^#[0-9a-f]{8}$/i.test(color) ? color.slice(0, 7) : color
+}
+
+function sameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+// Format an event's start into a viewer-local label like "Today · 4:00 PM",
+// "Tomorrow", "Friday · 9:30 AM", or "Jun 20 · 7:00 PM".
+export function formatWhen(startISO: string, allDay: boolean, now: Date = new Date()): string {
+  const d = new Date(startISO)
+  if (Number.isNaN(d.getTime())) return startISO
+
+  const tomorrow = new Date(now)
+  tomorrow.setDate(now.getDate() + 1)
+  const daysAhead = Math.round((d.getTime() - now.getTime()) / 86400_000)
+
+  let day: string
+  if (sameDay(d, now)) day = 'Today'
+  else if (sameDay(d, tomorrow)) day = 'Tomorrow'
+  else if (daysAhead >= 0 && daysAhead < 7)
+    day = d.toLocaleDateString(undefined, { weekday: 'long' })
+  else day = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+
+  if (allDay) return day
+  const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  return `${day} · ${time}`
+}
+
+export function mapCalendar(
+  events: CalendarResponse['events'],
+  now?: Date,
+): CalendarEvent[] {
+  return events.map((e) => ({
+    id: e.id,
+    title: e.title,
+    when: formatWhen(e.start, e.allDay, now),
+    where: e.location,
+    color: normalizeColor(e.color),
+  }))
+}
+
+export async function fetchCalendar(days = 14): Promise<CalendarEvent[]> {
+  const data = await getJson<CalendarResponse>(`/api/calendar?days=${days}`)
+  return mapCalendar(data.events)
 }

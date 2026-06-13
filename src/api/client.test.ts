@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   fetchWeatherForMembers,
   formatReleaseDate,
+  formatWhen,
+  mapCalendar,
   mapStreaming,
   mapTheatrical,
 } from './client'
@@ -47,6 +49,46 @@ describe('mapTheatrical', () => {
       genre: 'Upcoming',
       releaseDate: 'Jul 3',
     })
+  })
+})
+
+describe('formatWhen', () => {
+  const now = new Date(2026, 5, 13, 9, 0, 0) // Sat Jun 13 2026, 09:00 local
+
+  it('labels an all-day event today as "Today" with no time', () => {
+    const start = new Date(2026, 5, 13, 0, 0, 0).toISOString()
+    expect(formatWhen(start, true, now)).toBe('Today')
+  })
+
+  it('labels a timed event tomorrow as "Tomorrow · <time>"', () => {
+    const start = new Date(2026, 5, 14, 14, 30, 0).toISOString()
+    expect(formatWhen(start, false, now)).toMatch(/^Tomorrow · /)
+  })
+
+  it('labels a far-off event with a short date', () => {
+    const start = new Date(2026, 5, 23, 19, 0, 0).toISOString()
+    expect(formatWhen(start, false, now)).toMatch(/^Jun 23 · /)
+  })
+
+  it('returns the raw value when unparseable', () => {
+    expect(formatWhen('not a date', false, now)).toBe('not a date')
+  })
+})
+
+describe('mapCalendar', () => {
+  const now = new Date(2026, 5, 13, 9, 0, 0)
+
+  it('maps location to where and applies a default color when missing', () => {
+    const events = mapCalendar(
+      [
+        { id: '1', title: 'Soccer', start: new Date(2026, 5, 13, 16, 0).toISOString(), allDay: false, location: 'Field', color: '#abcdef' },
+        { id: '2', title: 'Holiday', start: new Date(2026, 5, 13, 0, 0).toISOString(), allDay: true },
+      ],
+      now,
+    )
+    expect(events[0]).toMatchObject({ id: '1', title: 'Soccer', where: 'Field', color: '#abcdef' })
+    expect(events[1].where).toBeUndefined()
+    expect(events[1].color).toBe('#378add') // fallback
   })
 })
 

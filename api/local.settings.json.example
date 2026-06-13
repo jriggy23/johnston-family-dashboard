@@ -3,7 +3,8 @@
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "AzureWebJobsStorage": "",
-    "TMDB_API_KEY": ""
+    "TMDB_API_KEY": "",
+    "ICLOUD_ACCOUNTS": "[{\"label\":\"John\",\"username\":\"you@icloud.com\",\"appPassword\":\"xxxx-xxxx-xxxx-xxxx\"}]"
   },
   "Host": {
     "CORS": "*"
