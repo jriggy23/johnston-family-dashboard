@@ -1,54 +1,31 @@
-import type {
-  CalendarEvent,
-  FamilyMember,
-  NewsItem,
-  StreamingTitle,
-  TheatricalRelease,
-} from '../types'
+import type { CalendarEvent, NewsItem, StreamingTitle, TheatricalRelease } from '../types'
 
-// Placeholder data used until the live APIs are wired in.
-// Family members will eventually come from Table Storage; weather from
-// Open-Meteo; news from Fox News RSS; streaming/theatrical from TMDB.
+// Placeholder data used until the live APIs are wired in. The family roster now
+// lives in data/members.ts (configurable via the familyMembers setting); weather
+// from Open-Meteo; news from Fox News RSS; streaming/theatrical from TMDB.
 
-export const familyMembers: FamilyMember[] = [
-  {
-    id: 'john',
-    name: 'John',
-    initials: 'JJ',
-    color: '#1c3a5e',
-    textColor: '#b5d4f4',
-    location: { label: 'Austin, TX', latitude: 30.2672, longitude: -97.7431 },
-  },
-  {
-    id: 'sarah',
-    name: 'Sarah',
-    initials: 'SJ',
-    color: '#10402f',
-    textColor: '#9fe1cb',
-    location: { label: 'Denver, CO', latitude: 39.7392, longitude: -104.9903 },
-  },
-  {
-    id: 'emma',
-    name: 'Emma',
-    initials: 'EJ',
-    color: '#4a1b0c',
-    textColor: '#f5c4b3',
-    location: { label: 'Boston, MA', latitude: 42.3601, longitude: -71.0589 },
-  },
-  {
-    id: 'max',
-    name: 'Max',
-    initials: 'MJ',
-    color: '#4b1528',
-    textColor: '#f4c0d1',
-    location: { label: 'Chicago, IL', latitude: 41.8781, longitude: -87.6298 },
-  },
-]
+// Build sample events anchored to the current week so the weekly grid always
+// has something to show. `dow` is 0=Sun..6=Sat. The `calendar` source matches
+// the default family roster (see data/members.ts); "Family" is intentionally
+// unmatched to exercise the iCloud-color fallback. Member colors are applied by
+// the calendar UI at render time, so `color` here is only a baseline.
+function weekISO(dow: number, hour: number, minute = 0): string {
+  const now = new Date()
+  const d = new Date(now)
+  d.setDate(now.getDate() - now.getDay() + dow)
+  d.setHours(hour, minute, 0, 0)
+  return d.toISOString()
+}
 
 export const mockEvents: CalendarEvent[] = [
-  { id: 'e1', title: "Emma's soccer game", when: 'Today · 4:00 PM', where: 'Riverside Field', color: '#378add' },
-  { id: 'e2', title: 'Family dinner', when: 'Today · 7:00 PM', where: 'Home', color: '#1d9e75' },
-  { id: 'e3', title: 'Max — dentist', when: 'Tomorrow · 9:30 AM', color: '#d4537e' },
+  { id: 'e1', title: '1:1 with manager', start: weekISO(1, 10, 0), end: weekISO(1, 10, 30), allDay: false, calendar: 'John', color: '#378add' },
+  { id: 'e2', title: 'Yoga', start: weekISO(2, 7, 0), end: weekISO(2, 8, 0), allDay: false, where: 'Studio B', calendar: 'Sarah', color: '#1d9e75' },
+  { id: 'e3', title: "Emma's soccer game", start: weekISO(3, 16, 0), end: weekISO(3, 17, 30), allDay: false, where: 'Riverside Field', calendar: 'Emma', color: '#d98a3d' },
+  { id: 'e4', title: 'Family dinner', start: weekISO(3, 19, 0), end: weekISO(3, 20, 30), allDay: false, where: 'Home', calendar: 'Family', color: '#1d9e75' },
+  { id: 'e5', title: 'Max — dentist', start: weekISO(4, 9, 30), end: weekISO(4, 10, 15), allDay: false, calendar: 'Max', color: '#d4537e' },
+  { id: 'e6', title: 'Book club', start: weekISO(4, 18, 30), end: weekISO(4, 20, 0), allDay: false, calendar: 'Sarah', color: '#1d9e75' },
+  { id: 'e7', title: 'John flight DEN → BOS', start: weekISO(5, 0, 0), allDay: true, where: 'DEN → BOS', calendar: 'John', color: '#378add' },
+  { id: 'e8', title: 'Piano recital', start: weekISO(6, 17, 30), end: weekISO(6, 19, 0), allDay: false, where: 'Community Hall', calendar: 'Emma', color: '#d98a3d' },
 ]
 
 export const mockNews: NewsItem[] = [
