@@ -52,9 +52,9 @@ export const mockEvents: CalendarEvent[] = [
 ]
 
 export const mockNews: NewsItem[] = [
-  { id: 'n1', title: 'Senate passes new infrastructure bill', category: 'Politics', ago: '18m ago', link: '#' },
-  { id: 'n2', title: 'Markets rally as tech leads gains', category: 'Business', ago: '1h ago', link: '#' },
-  { id: 'n3', title: 'Storm system moves across Midwest', category: 'Weather', ago: '2h ago', link: '#' },
+  { id: 'n1', title: 'Senate passes new infrastructure bill', source: 'NPR', ago: '18m ago', link: '#' },
+  { id: 'n2', title: 'Markets rally as tech leads gains', source: 'BBC', ago: '1h ago', link: '#' },
+  { id: 'n3', title: 'Storm system moves across Midwest', source: 'CBS News', ago: '2h ago', link: '#' },
 ]
 
 export const mockStreaming: StreamingTitle[] = [
