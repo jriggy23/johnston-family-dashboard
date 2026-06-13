@@ -49,13 +49,13 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
       <WeatherCards />
 
       <div className="grid grid-main">
-        <CalendarCard events={calendar} />
-        <NewsCard items={news} />
+        <CalendarCard events={calendar.items} loading={calendar.loading} />
+        <NewsCard items={news.items} loading={news.loading} />
       </div>
 
       <StreamingSection />
+      <TheatricalSection releases={theatrical.items} loading={theatrical.loading} />
       <NowPlayingSection />
-      <TheatricalSection releases={theatrical} />
     </div>
   )
 }

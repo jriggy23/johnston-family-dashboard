@@ -17,7 +17,9 @@ const DEFAULT_PROVIDERS: string[] = [...FAMILY_PROVIDERS]
 
 export default function StreamingSection() {
   const [mode, setMode] = useState<StreamingMode>('popular')
-  const [titles, setTitles] = useState<StreamingTitle[]>(mockStreaming)
+  // Starts empty (not mock) so the first paint shows a loading state rather
+  // than flashing placeholder titles. Mock is applied only after a fetch.
+  const [titles, setTitles] = useState<StreamingTitle[]>([])
   const [loading, setLoading] = useState(true)
   // Which providers are toggled on. Default: all of the family's providers.
   const [selected, setSelected] = useState<string[]>(DEFAULT_PROVIDERS)
@@ -44,15 +46,18 @@ export default function StreamingSection() {
     }
   }, [])
 
-  // Fetch whenever the mode changes; keep mock on empty/error.
+  // Fetch whenever the mode changes. Mock is used only as a fallback once the
+  // fetch settles (empty result or error) — never during the pending phase.
   useEffect(() => {
     let active = true
     setLoading(true)
     fetchStreaming(mode)
       .then((data) => {
-        if (active && data.length > 0) setTitles(data)
+        if (active) setTitles(data.length > 0 ? data : mockStreaming)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (active) setTitles(mockStreaming)
+      })
       .finally(() => active && setLoading(false))
     return () => {
       active = false
@@ -82,6 +87,10 @@ export default function StreamingSection() {
   const visible = allSelected
     ? titles
     : titles.filter((t) => t.services.some((s) => selected.includes(s)))
+
+  // Show a loading state only on the initial load (nothing fetched yet). On
+  // later mode/filter changes we keep the existing real data dimmed instead.
+  const showLoading = loading && titles.length === 0
 
   return (
     <div className="card" style={{ marginBottom: 16 }}>
@@ -133,7 +142,11 @@ export default function StreamingSection() {
         })}
       </div>
 
-      <div className="grid grid-watch" style={{ opacity: loading ? 0.6 : 1 }}>
+      {showLoading && <div className="dim" style={{ fontSize: 12 }}>Loading…</div>}
+      <div
+        className="grid grid-watch"
+        style={{ opacity: loading ? 0.6 : 1, display: showLoading ? 'none' : undefined }}
+      >
         {visible.map((t) => {
           const badges = t.services.length ? t.services : [t.service]
           return (

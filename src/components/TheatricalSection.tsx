@@ -1,6 +1,12 @@
 import type { TheatricalRelease } from '../types'
 
-export default function TheatricalSection({ releases }: { releases: TheatricalRelease[] }) {
+export default function TheatricalSection({
+  releases,
+  loading = false,
+}: {
+  releases: TheatricalRelease[]
+  loading?: boolean
+}) {
   return (
     <div className="card">
       <div className="card-header">
@@ -9,7 +15,8 @@ export default function TheatricalSection({ releases }: { releases: TheatricalRe
           In theaters soon
         </span>
       </div>
-      <div className="grid grid-watch">
+      {loading && <div className="dim" style={{ fontSize: 12 }}>Loading…</div>}
+      <div className="grid grid-watch" style={{ display: loading ? 'none' : undefined }}>
         {releases.map((r) => (
           <div key={r.id}>
             <div className="poster">

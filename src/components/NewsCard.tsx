@@ -1,6 +1,12 @@
 import type { NewsItem } from '../types'
 
-export default function NewsCard({ items }: { items: NewsItem[] }) {
+export default function NewsCard({
+  items,
+  loading = false,
+}: {
+  items: NewsItem[]
+  loading?: boolean
+}) {
   return (
     <div className="card">
       <div className="card-header">
@@ -10,7 +16,9 @@ export default function NewsCard({ items }: { items: NewsItem[] }) {
         </span>
       </div>
       <div className="news-list">
-        {items.map((n, i) => (
+        {loading && <div className="dim" style={{ fontSize: 12 }}>Loading…</div>}
+        {!loading &&
+          items.map((n, i) => (
           <div
             key={n.id}
             style={{
