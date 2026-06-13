@@ -100,6 +100,42 @@ export interface TheatricalRelease {
 
 export type StreamingMode = 'popular' | 'new' | 'trending'
 
+// Ratings for the detail view. Each is optional — only the ones we actually
+// have are rendered as badges. `tmdb` is always available when the endpoint is
+// configured; the rest come from OMDb and only when OMDB_API_KEY is set.
+export interface TitleRatings {
+  tmdb?: number // 0–10 (one decimal)
+  imdb?: string // e.g. "7.5/10"
+  rottenTomatoes?: string // e.g. "85%"
+  metacritic?: string // e.g. "72/100"
+}
+
+// Combined TMDB (+ optional OMDb) detail backing the clickable detail overlay.
+export interface TitleDetail {
+  id: string // `${mediaType}-${tmdbId}`
+  tmdbId: number
+  mediaType: 'movie' | 'tv'
+  title: string
+  overview: string
+  posterUrl?: string
+  backdropUrl?: string
+  releaseDate?: string // ISO yyyy-mm-dd
+  year?: string
+  runtime?: number // minutes, when known
+  genres: string[]
+  ratings: TitleRatings
+}
+
+// How a clicked card asks for its detail: a known TMDB (type,id) for streaming/
+// theatrical items, or a free-text title query for the local now-playing scrape
+// (which carries no TMDB id). `fallbackTitle` is shown while loading / on error.
+export interface TitleSelector {
+  type?: 'movie' | 'tv'
+  id?: string
+  q?: string
+  fallbackTitle?: string
+}
+
 export interface ShowDay {
   label: string // "Today" or a weekday e.g. "Sun"
   date: string // e.g. "Jun 14"

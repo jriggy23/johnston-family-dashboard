@@ -13,6 +13,8 @@ import type {
   StreamingMode,
   StreamingTitle,
   TheatricalRelease,
+  TitleDetail,
+  TitleSelector,
   WeatherCardConfig,
 } from '../types'
 import { serviceColors } from '../data/serviceColors'
@@ -137,6 +139,34 @@ export function mapTheatrical(
 export async function fetchTheatrical(): Promise<TheatricalRelease[]> {
   const data = await getJson<TheatricalResponse>('/api/theatrical')
   return mapTheatrical(data.releases)
+}
+
+// --- Title detail (TMDB + optional OMDb ratings via /api/title) ---
+
+interface TitleDetailResponse {
+  source: string // 'tmdb' | 'unconfigured'
+  detail: TitleDetail | null
+}
+
+// Build the /api/title query from a selector: a known TMDB (type,id) for
+// streaming/theatrical items, or a free-text `q` for the now-playing scrape.
+export function titleDetailUrl(selector: TitleSelector): string {
+  const params = new URLSearchParams()
+  if (selector.type && selector.id) {
+    params.set('type', selector.type)
+    params.set('id', selector.id)
+  } else if (selector.q) {
+    params.set('q', selector.q)
+  }
+  return `/api/title?${params.toString()}`
+}
+
+// Returns the combined detail, or null when the endpoint is unconfigured (no
+// TMDB key) so the caller can fall back to mock detail. Throws on a transport
+// or upstream error so the caller can show its error/fallback state.
+export async function fetchTitleDetail(selector: TitleSelector): Promise<TitleDetail | null> {
+  const data = await getJson<TitleDetailResponse>(titleDetailUrl(selector))
+  return data.detail
 }
 
 // --- Showtimes (local Epic, scraped via /api/showtimes) ---

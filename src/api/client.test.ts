@@ -8,6 +8,7 @@ import {
   mapCalendar,
   mapStreaming,
   mapTheatrical,
+  titleDetailUrl,
 } from './client'
 
 afterEach(() => {
@@ -141,6 +142,18 @@ describe('geocode', () => {
   it('throws when the location is not found', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('not found', { status: 404 })))
     await expect(geocode('zzzzz')).rejects.toThrow()
+  })
+})
+
+describe('titleDetailUrl', () => {
+  it('uses type+id when both are present', () => {
+    expect(titleDetailUrl({ type: 'movie', id: '123', fallbackTitle: 'X' })).toBe(
+      '/api/title?type=movie&id=123',
+    )
+  })
+
+  it('falls back to a title query when no id is given', () => {
+    expect(titleDetailUrl({ q: 'The Quiet Hour' })).toBe('/api/title?q=The+Quiet+Hour')
   })
 })
 
