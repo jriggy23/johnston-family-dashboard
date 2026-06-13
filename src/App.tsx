@@ -54,8 +54,8 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
       </div>
 
       <StreamingSection />
-      <NowPlayingSection />
       <TheatricalSection releases={theatrical} />
+      <NowPlayingSection />
     </div>
   )
 }
