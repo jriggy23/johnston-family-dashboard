@@ -122,6 +122,182 @@ h3 {
   font-weight: 500;
 }
 
+/* --- Weekly calendar --- */
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cal-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-legend-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cal-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cal-avatar-initials {
+  border: 1px solid var(--border-strong);
+}
+
+/* Photo editor */
+.cal-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cal-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cal-editor-name {
+  font-size: 13px;
+  font-weight: 500;
+  margin-right: auto;
+}
+
+.cal-editor .btn-small {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cal-day {
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  min-height: 96px;
+  border-top: 2px solid transparent;
+}
+
+.cal-today {
+  border-top-color: var(--accent);
+}
+
+.cal-day-head {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.cal-dow {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cal-date {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cal-today-tag {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.cal-events {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cal-empty {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.cal-event {
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 4px 6px;
+  background: var(--surface);
+}
+
+.cal-event-time {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.cal-event-title {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.cal-event-where {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* Phone: stacked day-by-day sections instead of a 7-column grid. */
+@media (max-width: 720px) {
+  .cal-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .cal-day {
+    min-height: 0;
+    border-top: none;
+    border-left: 2px solid transparent;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .cal-today {
+    border-top: none;
+    border-left-color: var(--accent);
+  }
+
+  .cal-day-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    margin-bottom: 0;
+  }
+
+  .cal-today-tag {
+    margin-left: 0;
+  }
+
+  /* Hide days with no events for a tidy phone list. */
+  .cal-day-empty {
+    display: none;
+  }
+}
+
 /* --- Theatrical showtimes --- */
 
 .release-date-badge {

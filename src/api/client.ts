@@ -79,6 +79,7 @@ interface StreamingResponse {
     id: string
     title: string
     service: string
+    services?: string[]
     posterUrl?: string
     mediaType?: 'movie' | 'tv'
   }[]
@@ -89,6 +90,7 @@ export function mapStreaming(titles: StreamingResponse['titles']): StreamingTitl
     id: t.id,
     title: t.title,
     service: t.service,
+    services: t.services ?? (t.service ? [t.service] : []),
     posterUrl: t.posterUrl,
     mediaType: t.mediaType,
     ...serviceColors(t.service),
@@ -161,8 +163,11 @@ interface CalendarResponse {
     id: string
     title: string
     start: string // ISO
+    end?: string // ISO
     allDay: boolean
     location?: string
+    calendar?: string
+    calendarId?: string
     color?: string
   }[]
 }
@@ -205,15 +210,19 @@ export function formatWhen(startISO: string, allDay: boolean, now: Date = new Da
   return `${day} · ${time}`
 }
 
-export function mapCalendar(
-  events: CalendarResponse['events'],
-  now?: Date,
-): CalendarEvent[] {
+// Map the API response into raw CalendarEvents. Member attribution (memberId +
+// member color) is applied separately by the calendar UI once the family roster
+// is loaded; here `color` is just the event's own iCloud color as a baseline.
+export function mapCalendar(events: CalendarResponse['events']): CalendarEvent[] {
   return events.map((e) => ({
     id: e.id,
     title: e.title,
-    when: formatWhen(e.start, e.allDay, now),
+    start: e.start,
+    end: e.end,
+    allDay: e.allDay,
     where: e.location,
+    calendar: e.calendar ?? '',
+    calendarId: e.calendarId,
     color: normalizeColor(e.color),
   }))
 }

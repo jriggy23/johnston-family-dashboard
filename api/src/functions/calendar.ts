@@ -25,7 +25,8 @@ interface CalendarEventDto {
   end?: string
   allDay: boolean
   location?: string
-  calendar: string
+  calendar: string // source calendar display name (used to attribute to a member)
+  calendarId?: string // stable calendar URL, for robust matching across renames
   color?: string
 }
 
@@ -65,7 +66,7 @@ function toDto(
   ev: IcalEvent,
   start: Date,
   end: Date | undefined,
-  meta: { name: string; color?: string },
+  meta: { name: string; color?: string; id?: string },
 ): CalendarEventDto {
   return {
     id: `${ev.uid ?? 'evt'}-${start.toISOString()}`,
@@ -75,6 +76,7 @@ function toDto(
     allDay: ev.datetype === 'date',
     location: ev.location?.trim() || undefined,
     calendar: meta.name,
+    calendarId: meta.id,
     color: meta.color,
   }
 }
@@ -84,7 +86,7 @@ function expandEvent(
   ev: IcalEvent,
   rangeStart: Date,
   rangeEnd: Date,
-  meta: { name: string; color?: string },
+  meta: { name: string; color?: string; id?: string },
   out: CalendarEventDto[],
 ): void {
   const durationMs = ev.end ? ev.end.getTime() - ev.start.getTime() : 0
@@ -135,6 +137,7 @@ async function fetchAccountEvents(
     const name =
       typeof cal.displayName === 'string' && cal.displayName ? cal.displayName : 'Calendar'
     const color = typeof cal.calendarColor === 'string' ? cal.calendarColor : undefined
+    const id = typeof cal.url === 'string' ? cal.url : undefined
 
     let objects
     try {
@@ -152,7 +155,7 @@ async function fetchAccountEvents(
       const parsed = nodeIcal.sync.parseICS(obj.data) as Record<string, IcalEvent>
       for (const v of Object.values(parsed)) {
         if (v.type !== 'VEVENT' || !v.start) continue
-        expandEvent(v, rangeStart, rangeEnd, { name, color }, events)
+        expandEvent(v, rangeStart, rangeEnd, { name, color, id }, events)
       }
     }
   }

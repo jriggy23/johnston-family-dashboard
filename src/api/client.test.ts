@@ -77,19 +77,32 @@ describe('formatWhen', () => {
 })
 
 describe('mapCalendar', () => {
-  const now = new Date(2026, 5, 13, 9, 0, 0)
-
-  it('maps location to where and applies a default color when missing', () => {
-    const events = mapCalendar(
-      [
-        { id: '1', title: 'Soccer', start: new Date(2026, 5, 13, 16, 0).toISOString(), allDay: false, location: 'Field', color: '#abcdef' },
-        { id: '2', title: 'Holiday', start: new Date(2026, 5, 13, 0, 0).toISOString(), allDay: true },
-      ],
-      now,
-    )
-    expect(events[0]).toMatchObject({ id: '1', title: 'Soccer', where: 'Field', color: '#abcdef' })
+  it('carries raw fields, maps location to where, and applies a default color when missing', () => {
+    const events = mapCalendar([
+      {
+        id: '1',
+        title: 'Soccer',
+        start: '2026-06-13T16:00:00.000Z',
+        end: '2026-06-13T17:00:00.000Z',
+        allDay: false,
+        location: 'Field',
+        calendar: 'Emma',
+        color: '#abcdef',
+      },
+      { id: '2', title: 'Holiday', start: '2026-06-13T00:00:00.000Z', allDay: true },
+    ])
+    expect(events[0]).toMatchObject({
+      id: '1',
+      title: 'Soccer',
+      start: '2026-06-13T16:00:00.000Z',
+      allDay: false,
+      where: 'Field',
+      calendar: 'Emma',
+      color: '#abcdef',
+    })
     expect(events[1].where).toBeUndefined()
-    expect(events[1].color).toBe('#378add') // fallback
+    expect(events[1].calendar).toBe('') // unset source → empty (unmatched)
+    expect(events[1].color).toBe('#378add') // fallback color
   })
 })
 

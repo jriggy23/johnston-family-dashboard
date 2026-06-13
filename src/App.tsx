@@ -1,14 +1,14 @@
 import AccountMenu from './components/AccountMenu'
-import CalendarCard from './components/CalendarCard'
 import LoginScreen from './components/LoginScreen'
 import NewsCard from './components/NewsCard'
 import NowPlayingSection from './components/NowPlayingSection'
 import StreamingSection from './components/StreamingSection'
 import TheatricalSection from './components/TheatricalSection'
 import WeatherCards from './components/WeatherCards'
+import WeeklyCalendar from './components/WeeklyCalendar'
 import { useAuth } from './auth/AuthContext'
 import { useDashboardData } from './hooks/useDashboardData'
-import { familyMembers } from './data/mock'
+import { useFamilyMembers } from './hooks/useFamilyMembers'
 import type { ClientPrincipal } from './auth/client'
 
 function todayLabel(): string {
@@ -21,6 +21,7 @@ function todayLabel(): string {
 
 function Dashboard({ user }: { user: ClientPrincipal }) {
   const { calendar, news, theatrical } = useDashboardData()
+  const { members, saveMember } = useFamilyMembers()
 
   return (
     <div className="app">
@@ -31,16 +32,27 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
         </div>
         <div className="header-right">
           <div className="avatars">
-            {familyMembers.map((m) => (
-              <div
-                key={m.id}
-                className="avatar"
-                title={m.name}
-                style={{ background: m.color, color: m.textColor }}
-              >
-                {m.initials}
-              </div>
-            ))}
+            {members.map((m) =>
+              m.photo ? (
+                <img
+                  key={m.id}
+                  className="avatar"
+                  src={m.photo}
+                  alt={m.name}
+                  title={m.name}
+                  style={{ objectFit: 'cover' }}
+                />
+              ) : (
+                <div
+                  key={m.id}
+                  className="avatar"
+                  title={m.name}
+                  style={{ background: m.color, color: m.textColor }}
+                >
+                  {m.initials}
+                </div>
+              ),
+            )}
           </div>
           <AccountMenu user={user} />
         </div>
@@ -48,14 +60,21 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
 
       <WeatherCards />
 
-      <div className="grid grid-main">
-        <CalendarCard events={calendar} />
-        <NewsCard items={news} />
+      <div style={{ marginBottom: 16 }}>
+        <WeeklyCalendar
+          events={calendar.items}
+          members={members}
+          loading={calendar.loading}
+          saveMember={saveMember}
+        />
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <NewsCard items={news.items} loading={news.loading} />
       </div>
 
       <StreamingSection />
+      <TheatricalSection releases={theatrical.items} loading={theatrical.loading} />
       <NowPlayingSection />
-      <TheatricalSection releases={theatrical} />
     </div>
   )
 }

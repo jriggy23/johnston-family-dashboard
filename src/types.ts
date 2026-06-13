@@ -38,9 +38,27 @@ export interface WeatherCardConfig {
 export interface CalendarEvent {
   id: string
   title: string
-  when: string
+  start: string // ISO — raw, so the weekly grid can place it
+  end?: string // ISO
+  allDay: boolean
   where?: string
+  calendar: string // source calendar display name (the member's iCloud calendar)
+  calendarId?: string // stable calendar URL, when available
+  memberId?: string // resolved family member, when the calendar matches one
+  color: string // member color when matched, else the event's own iCloud color
+}
+
+// A family member: their identity, the iCloud calendar their events come from,
+// a highlight color (palette-assigned, or derived from their photo), and an
+// optional uploaded avatar (stored separately in the settings store).
+export interface FamilyCalendarMember {
+  id: string
+  name: string
+  initials: string
+  calendarSource: string // matches CalendarEvent.calendar (iCloud display name)
   color: string
+  textColor: string
+  photoKey?: string // settings key holding the avatar data-URL, e.g. memberPhoto_emma
 }
 
 export interface NewsItem {
@@ -54,7 +72,8 @@ export interface NewsItem {
 export interface StreamingTitle {
   id: string
   title: string
-  service: string
+  service: string // primary (first matched) service, kept for back-compat
+  services: string[] // all family providers this title streams on (US flatrate)
   serviceColor: string
   serviceTextColor: string
   posterUrl?: string
