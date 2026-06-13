@@ -8,6 +8,7 @@ import type {
   CalendarEvent,
   NewsItem,
   PointWeather,
+  StreamingMode,
   StreamingTitle,
   TheatricalRelease,
   WeatherCardConfig,
@@ -73,22 +74,28 @@ export async function fetchNews(topics?: string[], limit = 10): Promise<NewsItem
 
 interface StreamingResponse {
   source: string
-  titles: { id: string; title: string; service: string }[]
+  titles: {
+    id: string
+    title: string
+    service: string
+    posterUrl?: string
+    mediaType?: 'movie' | 'tv'
+  }[]
 }
 
-export function mapStreaming(
-  titles: StreamingResponse['titles'],
-): StreamingTitle[] {
+export function mapStreaming(titles: StreamingResponse['titles']): StreamingTitle[] {
   return titles.map((t) => ({
     id: t.id,
     title: t.title,
     service: t.service,
+    posterUrl: t.posterUrl,
+    mediaType: t.mediaType,
     ...serviceColors(t.service),
   }))
 }
 
-export async function fetchStreaming(): Promise<StreamingTitle[]> {
-  const data = await getJson<StreamingResponse>('/api/streaming')
+export async function fetchStreaming(mode: StreamingMode = 'popular'): Promise<StreamingTitle[]> {
+  const data = await getJson<StreamingResponse>(`/api/streaming?mode=${mode}`)
   return mapStreaming(data.titles)
 }
 
@@ -96,7 +103,7 @@ export async function fetchStreaming(): Promise<StreamingTitle[]> {
 
 interface TheatricalResponse {
   source: string
-  releases: { id: string; title: string; genre: string; releaseDate: string }[]
+  releases: { id: string; title: string; genre: string; releaseDate: string; posterUrl?: string }[]
 }
 
 // ISO "yyyy-mm-dd" -> "Mon D" (e.g. "2026-06-20" -> "Jun 20"). Falls back to the
@@ -119,6 +126,7 @@ export function mapTheatrical(
     title: r.title,
     genre: r.genre || 'Upcoming',
     releaseDate: formatReleaseDate(r.releaseDate),
+    posterUrl: r.posterUrl,
   }))
 }
 

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { fetchCalendar, fetchNews, fetchStreaming, fetchTheatrical } from '../api/client'
-import { mockEvents, mockNews, mockStreaming, mockTheatrical } from '../data/mock'
-import type { CalendarEvent, NewsItem, StreamingTitle, TheatricalRelease } from '../types'
+import { fetchCalendar, fetchNews, fetchTheatrical } from '../api/client'
+import { mockEvents, mockNews, mockTheatrical } from '../data/mock'
+import type { CalendarEvent, NewsItem, TheatricalRelease } from '../types'
 
 interface DashboardData {
   calendar: CalendarEvent[]
   news: NewsItem[]
-  streaming: StreamingTitle[]
   theatrical: TheatricalRelease[]
 }
 
@@ -17,7 +16,6 @@ export function useDashboardData(): DashboardData {
   const [data, setData] = useState<DashboardData>({
     calendar: mockEvents,
     news: mockNews,
-    streaming: mockStreaming,
     theatrical: mockTheatrical,
   })
 
@@ -41,7 +39,6 @@ export function useDashboardData(): DashboardData {
 
     load('calendar', () => fetchCalendar())
     load('news', () => fetchNews())
-    load('streaming', fetchStreaming)
     load('theatrical', fetchTheatrical)
 
     return () => {
