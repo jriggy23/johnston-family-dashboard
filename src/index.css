@@ -122,6 +122,28 @@ h3 {
   font-weight: 500;
 }
 
+.news-list {
+  max-height: 340px;
+  overflow-y: auto;
+  /* room so headline text doesn't sit under the scrollbar */
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.news-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.news-list::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+}
+
+.news-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* --- Weather cards --- */
 
 .weather-card {

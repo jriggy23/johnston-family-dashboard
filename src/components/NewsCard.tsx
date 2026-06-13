@@ -9,29 +9,31 @@ export default function NewsCard({ items }: { items: NewsItem[] }) {
           Top stories
         </span>
       </div>
-      {items.map((n, i) => (
-        <div
-          key={n.id}
-          style={{
-            borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
-            paddingBottom: i < items.length - 1 ? 10 : 0,
-            marginBottom: i < items.length - 1 ? 10 : 0,
-          }}
-        >
-          <a
-            href={n.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: 'var(--text)', textDecoration: 'none', fontSize: 14, fontWeight: 500, lineHeight: 1.4 }}
+      <div className="news-list">
+        {items.map((n, i) => (
+          <div
+            key={n.id}
+            style={{
+              borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
+              paddingBottom: i < items.length - 1 ? 10 : 0,
+              marginBottom: i < items.length - 1 ? 10 : 0,
+            }}
           >
-            {n.title}
-          </a>
-          <div className="dim" style={{ fontSize: 12, marginTop: 2 }}>
-            <span className="news-source">{n.source}</span>
-            {n.ago ? ` · ${n.ago}` : ''}
+            <a
+              href={n.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--text)', textDecoration: 'none', fontSize: 14, fontWeight: 500, lineHeight: 1.4 }}
+            >
+              {n.title}
+            </a>
+            <div className="dim" style={{ fontSize: 12, marginTop: 2 }}>
+              <span className="news-source">{n.source}</span>
+              {n.ago ? ` · ${n.ago}` : ''}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
