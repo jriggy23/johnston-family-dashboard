@@ -139,18 +139,37 @@ required for an always-on tracker — already covered here.)
 Prerequisites: Node 20+ and npm. For running the API locally, the
 [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local).
 
+There are two ways to run the app locally:
+
+**1. Frontend only (fast UI iteration)** — `vite dev` serves neither `/.auth/*`
+nor `/api/*`, so authentication falls back to a built-in **dev stub** user and
+data sections fall back to **mock data**:
+
 ```bash
-# Frontend
 npm install
 npm run dev          # http://localhost:5173
-
-# API (in a second terminal)
-cd api
-npm install
-npm start            # Functions host on http://localhost:7071
 ```
 
-The frontend currently renders mock data; live API wiring is the next step.
+**2. Full emulation (auth + live API)** — the
+[Static Web Apps CLI](https://learn.microsoft.com/azure/static-web-apps/local-development)
+(`npm run swa`) emulates the SWA runtime: a **mock login** (so you can exercise
+the Apple Sign In gate without real Apple credentials) and a proxy to the live
+Functions API.
+
+```bash
+# Build the API once (the Functions host runs the compiled output in api/dist)
+npm --prefix api install
+npm --prefix api run build      # or `npm --prefix api run watch` in its own terminal
+
+# In another terminal, start the emulator (it launches `npm run dev` for you)
+npm run swa                     # http://localhost:4280
+```
+
+Visit the emulator URL, sign in via the mock login, and the dashboard loads with
+**live weather and news** (no API key needed). Streaming/theatrical show live
+TMDB data only if `TMDB_API_KEY` is set in `api/local.settings.json` (copy
+`api/local.settings.json.example`), otherwise they fall back to mock data.
+
 Useful scripts: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 
 ## CI/CD
@@ -161,11 +180,62 @@ GitHub Actions (`.github/workflows/ci-cd.yml`) runs on every push and PR to `mai
 2. **Deploy** — on `main`, deploy to **production**; on a PR, deploy to a
    per-PR **preview environment**. Closing the PR tears the preview down.
 
-**Required setup before the pipeline can deploy:**
+See **Production setup** below for the one-time Apple + Azure configuration the
+pipeline depends on.
 
-- Create the Azure Static Web App (Standard plan) and copy its deployment token.
-- Add it as a GitHub Actions secret named `AZURE_STATIC_WEB_APPS_API_TOKEN`
-  (repo → Settings → Secrets and variables → Actions).
-- Configure app settings on the Static Web App: `APPLE_CLIENT_ID`,
-  `APPLE_CLIENT_SECRET` (Apple auth), and optionally `TMDB_API_KEY` (streaming /
-  theatrical; falls back to mock data when unset).
+## Production setup (Apple Sign In + Azure)
+
+These steps are done once, outside the codebase, before the deployed site can
+authenticate users. The app code is already wired for all of it — these steps
+just provide the credentials and resources it expects.
+
+### 1. Apple Developer portal
+
+You need an Apple Developer account (already covered by the Family Map's $99/yr
+membership). In [developer.apple.com](https://developer.apple.com/account) →
+**Certificates, Identifiers & Profiles**:
+
+1. **App ID** — Identifiers → **+** → *App IDs* → *App*. Enable the
+   **Sign in with Apple** capability. (Acts as the primary identifier.)
+2. **Services ID** — Identifiers → **+** → *Services IDs*. This identifier (e.g.
+   `com.johnston.dashboard.web`) is your **`APPLE_CLIENT_ID`**. Enable
+   **Sign in with Apple**, then **Configure**:
+   - **Primary App ID**: the App ID from step 1.
+   - **Domains**: your SWA host, e.g. `<app-name>.azurestaticapps.net` (and your
+     custom domain if you add one).
+   - **Return URLs**: `https://<your-swa-host>/.auth/login/apple/callback`
+3. **Sign in with Apple key** — Keys → **+**. Enable *Sign in with Apple*,
+   download the **`.p8`** private key (one-time download). Note the **Key ID**
+   and your **Team ID**.
+
+### 2. Generate the client secret (`APPLE_CLIENT_SECRET`)
+
+Apple's "client secret" is a short-lived **ES256 JWT** signed with the `.p8` key.
+Inputs: Team ID (issuer), the Services ID (subject/audience `https://appleid.apple.com`),
+Key ID (header `kid`), and the `.p8`. Apple caps its lifetime at **6 months**, so
+this value must be **regenerated and re-set** before it expires. Generate it with
+a small script (Apple documents the JWT claims) and use the output as
+`APPLE_CLIENT_SECRET`.
+
+### 3. Azure Static Web App
+
+1. Create a **Static Web App** on the **Standard** plan in the personal Azure
+   subscription (Standard is required for custom OIDC + bring-your-own Functions —
+   see *Hosting & Infrastructure* above).
+2. Copy its **deployment token** → add as the GitHub Actions secret
+   **`AZURE_STATIC_WEB_APPS_API_TOKEN`** (repo → Settings → Secrets and variables
+   → Actions). The CI/CD pipeline uses it to deploy.
+3. In the Static Web App → **Configuration** → application settings, add:
+   - `APPLE_CLIENT_ID` — the Services ID from step 1.
+   - `APPLE_CLIENT_SECRET` — the JWT from step 2.
+   - `TMDB_API_KEY` *(optional)* — enables live streaming/theatrical; falls back
+     to mock data when unset.
+
+   These names match the `clientIdSettingName` / `clientSecretSettingName` already
+   declared in [`staticwebapp.config.json`](staticwebapp.config.json).
+
+### 4. Deploy
+
+Push to `main` (or merge a PR). The pipeline builds and deploys; once app settings
+are in place, **"Sign in with Apple"** completes on the deployed host and the
+signed-in identity is visible at `/.auth/me`.
