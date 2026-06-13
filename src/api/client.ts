@@ -79,6 +79,7 @@ interface StreamingResponse {
     id: string
     title: string
     service: string
+    services?: string[]
     posterUrl?: string
     mediaType?: 'movie' | 'tv'
   }[]
@@ -89,6 +90,7 @@ export function mapStreaming(titles: StreamingResponse['titles']): StreamingTitl
     id: t.id,
     title: t.title,
     service: t.service,
+    services: t.services ?? (t.service ? [t.service] : []),
     posterUrl: t.posterUrl,
     mediaType: t.mediaType,
     ...serviceColors(t.service),

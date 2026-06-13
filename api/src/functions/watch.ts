@@ -79,22 +79,28 @@ interface DiscoverItem {
 interface WatchTitle {
   id: string
   title: string
-  service: string
+  service: string // primary (first matched) service, kept for back-compat
+  services: string[] // all family providers this title streams on (US flatrate)
   posterUrl?: string
   mediaType: 'movie' | 'tv'
 }
 
-// Which of the family's services carries this title (first match), for the badge.
-async function serviceFor(type: 'movie' | 'tv', id: number, family: Set<number>): Promise<string> {
+// All of the family's services that carry this title (US flatrate), in the
+// canonical PROVIDER_NAMES order, for the badges and the provider filter.
+async function servicesFor(type: 'movie' | 'tv', id: number, family: Set<number>): Promise<string[]> {
   try {
     const data = await tmdb<{ results: Record<string, { flatrate?: { provider_id: number }[] }> }>(
       `/${type}/${id}/watch/providers`,
     )
     const flat = data.results?.[REGION]?.flatrate ?? []
-    const hit = flat.find((p) => family.has(p.provider_id))
-    return hit ? (PROVIDER_NAMES[hit.provider_id] ?? 'Streaming') : 'Streaming'
+    const ids = new Set(flat.map((p) => p.provider_id).filter((pid) => family.has(pid)))
+    // Preserve the canonical provider order and de-duplicate.
+    return Object.keys(PROVIDER_NAMES)
+      .map(Number)
+      .filter((pid) => ids.has(pid))
+      .map((pid) => PROVIDER_NAMES[pid])
   } catch {
-    return 'Streaming'
+    return []
   }
 }
 
@@ -156,13 +162,17 @@ export async function streaming(
       .slice(0, 12)
 
     const titles: WatchTitle[] = await Promise.all(
-      top.map(async ({ item, type }) => ({
-        id: `${type}-${item.id}`,
-        title: item.title ?? item.name ?? 'Untitled',
-        service: await serviceFor(type, item.id, family),
-        posterUrl: posterUrl(item.poster_path),
-        mediaType: type,
-      })),
+      top.map(async ({ item, type }) => {
+        const services = await servicesFor(type, item.id, family)
+        return {
+          id: `${type}-${item.id}`,
+          title: item.title ?? item.name ?? 'Untitled',
+          service: services[0] ?? 'Streaming',
+          services,
+          posterUrl: posterUrl(item.poster_path),
+          mediaType: type,
+        }
+      }),
     )
 
     return { jsonBody: { source: 'tmdb', mode, titles } }

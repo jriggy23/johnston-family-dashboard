@@ -58,10 +58,10 @@ export const mockNews: NewsItem[] = [
 ]
 
 export const mockStreaming: StreamingTitle[] = [
-  { id: 's1', title: 'The Last Frontier', service: 'Netflix', serviceColor: '#10402f', serviceTextColor: '#9fe1cb' },
-  { id: 's2', title: 'Echoes of Tomorrow', service: 'Disney+', serviceColor: '#1c3a5e', serviceTextColor: '#b5d4f4' },
-  { id: 's3', title: 'City of Glass', service: 'Max', serviceColor: '#2f2a6b', serviceTextColor: '#cecbf6' },
-  { id: 's4', title: 'Northern Lights', service: 'Prime', serviceColor: '#4a1b0c', serviceTextColor: '#f5c4b3' },
+  { id: 's1', title: 'The Last Frontier', service: 'Netflix', services: ['Netflix'], serviceColor: '#10402f', serviceTextColor: '#9fe1cb' },
+  { id: 's2', title: 'Echoes of Tomorrow', service: 'Disney+', services: ['Disney+', 'Hulu'], serviceColor: '#1c3a5e', serviceTextColor: '#b5d4f4' },
+  { id: 's3', title: 'City of Glass', service: 'Max', services: ['Max'], serviceColor: '#2f2a6b', serviceTextColor: '#cecbf6' },
+  { id: 's4', title: 'Northern Lights', service: 'Prime', services: ['Prime', 'Paramount+'], serviceColor: '#4a1b0c', serviceTextColor: '#f5c4b3' },
 ]
 
 export const mockTheatrical: TheatricalRelease[] = [

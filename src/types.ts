@@ -54,7 +54,8 @@ export interface NewsItem {
 export interface StreamingTitle {
   id: string
   title: string
-  service: string
+  service: string // primary (first matched) service, kept for back-compat
+  services: string[] // all family providers this title streams on (US flatrate)
   serviceColor: string
   serviceTextColor: string
   posterUrl?: string
