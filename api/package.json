@@ -10,7 +10,7 @@
     "clean": "rimraf dist",
     "prestart": "npm run clean && npm run build",
     "start": "func start",
-    "test": "echo \"(no API unit tests yet)\" && exit 0"
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
     "@azure/data-tables": "^13.3.0",
@@ -19,6 +19,9 @@
     "fast-xml-parser": "^4.5.0",
     "node-ical": "^0.20.1",
     "tsdav": "^2.1.5"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",

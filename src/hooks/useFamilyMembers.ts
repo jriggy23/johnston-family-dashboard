@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchCalendars, getSetting, putSetting } from '../api/client'
+import { fetchCalendars, fetchContactPhoto, getSetting, putSetting } from '../api/client'
 import {
   DEFAULT_MEMBERS,
   MEMBER_PHOTO_KEY_PREFIX,
@@ -7,13 +7,18 @@ import {
   membersFromCalendars,
   readableTextColor,
 } from '../data/members'
+import { dominantColorFromUrl } from '../lib/avatar'
 import type { FamilyCalendarMember } from '../types'
 
 // A roster member plus runtime state: its loaded avatar, whether it's hidden,
 // and its display order. Photos live under their own settings key
 // (memberPhoto_<id>) so the overrides value stays small.
+//
+// Avatar precedence is: (a) manually uploaded `photo` (memberPhoto_<id> override)
+// → (b) `contactPhoto` auto-resolved from iCloud Contacts → (c) colored initials.
 export interface MemberWithPhoto extends FamilyCalendarMember {
   photo?: string
+  contactPhoto?: string
   hidden?: boolean
   order?: number
 }
@@ -75,7 +80,8 @@ export function useFamilyMembers(): FamilyMembersState {
       const roster = applyOverrides(base, overrides)
       setMembers(roster)
       setLoading(false)
-      // Lazily load avatars for members flagged as having a photo.
+      // Lazily load avatars for members flagged as having a manually uploaded
+      // photo (precedence (a)).
       roster.forEach((m) => {
         if (!overrides[m.id]?.photo) return
         getSetting<string>(`${MEMBER_PHOTO_KEY_PREFIX}${m.id}`)
@@ -83,6 +89,35 @@ export function useFamilyMembers(): FamilyMembersState {
             if (active && photo) {
               setMembers((prev) => prev.map((x) => (x.id === m.id ? { ...x, photo } : x)))
             }
+          })
+          .catch(() => {})
+      })
+
+      // For members WITHOUT a manual photo, try to auto-resolve an avatar from
+      // iCloud Contacts (precedence (b)). When found and the user hasn't set a
+      // manual color, derive the highlight color from the photo. Any failure is
+      // silent — the member keeps its calendar color + initials fallback.
+      roster.forEach((m) => {
+        if (overrides[m.id]?.photo) return // manual photo wins; don't fetch
+        fetchContactPhoto(m.calendarSource)
+          .then((dataUrl) => {
+            if (!active || !dataUrl) return
+            setMembers((prev) =>
+              prev.map((x) => (x.id === m.id ? { ...x, contactPhoto: dataUrl } : x)),
+            )
+            if (overrides[m.id]?.color) return // respect a manual color override
+            dominantColorFromUrl(dataUrl)
+              .then((color) => {
+                if (!active) return
+                setMembers((prev) =>
+                  prev.map((x) =>
+                    x.id === m.id
+                      ? { ...x, color, textColor: readableTextColor(color) }
+                      : x,
+                  ),
+                )
+              })
+              .catch(() => {})
           })
           .catch(() => {})
       })

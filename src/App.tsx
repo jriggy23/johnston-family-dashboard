@@ -35,11 +35,11 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
         <div className="header-right">
           <div className="avatars">
             {visibleMembers.map((m) =>
-              m.photo ? (
+              m.photo ?? m.contactPhoto ? (
                 <img
                   key={m.id}
                   className="avatar"
-                  src={m.photo}
+                  src={m.photo ?? m.contactPhoto}
                   alt={m.name}
                   title={m.name}
                   style={{ objectFit: 'cover' }}
