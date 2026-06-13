@@ -80,5 +80,6 @@ export interface ShowDay {
 export interface ShowtimeMovie {
   title: string
   normalized: string
+  posterUrl?: string
   days: ShowDay[]
 }

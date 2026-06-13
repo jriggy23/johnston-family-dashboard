@@ -18,8 +18,11 @@ export interface ShowDay {
 export interface ShowtimeMovie {
   title: string
   normalized: string
+  posterUrl?: string
   days: ShowDay[]
 }
+
+const CINEMACLOCK_ORIGIN = 'https://www.cinemaclock.com'
 
 // "Aladdin: The Return!" -> "aladdinthereturn"
 export function normalizeTitle(title: string): string {
@@ -76,7 +79,13 @@ export function parseShowtimes(html: string): ShowtimeMovie[] {
 
     const days = [...byDate.values()].filter((d) => d.times.length > 0).slice(0, 5)
     if (days.length > 0) {
-      movies.push({ title, normalized: normalizeTitle(title), days })
+      const poster = $block.find('.smallposter').first().attr('data-src')
+      movies.push({
+        title,
+        normalized: normalizeTitle(title),
+        posterUrl: poster ? `${CINEMACLOCK_ORIGIN}${poster}` : undefined,
+        days,
+      })
     }
   })
 
