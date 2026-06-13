@@ -27,3 +27,7 @@ npm-debug.log*
 
 # Test coverage
 coverage/
+
+# Apple Sign In private key + local secrets
+.secrets/
+*.p8

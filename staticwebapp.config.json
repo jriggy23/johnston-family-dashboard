@@ -2,21 +2,13 @@
   "$schema": "https://json.schemastore.org/staticwebapp.config.json",
   "auth": {
     "identityProviders": {
-      "customOpenIdConnectProviders": {
-        "apple": {
-          "registration": {
-            "clientIdSettingName": "APPLE_CLIENT_ID",
-            "clientCredential": {
-              "clientSecretSettingName": "APPLE_CLIENT_SECRET"
-            },
-            "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://appleid.apple.com/.well-known/openid-configuration"
-            }
-          },
-          "login": {
-            "nameClaimType": "https://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
-            "scopes": ["openid", "email", "name"]
-          }
+      "apple": {
+        "registration": {
+          "clientIdSettingName": "APPLE_CLIENT_ID",
+          "clientSecretSettingName": "APPLE_CLIENT_SECRET"
+        },
+        "login": {
+          "scopes": ["name", "email"]
         }
       }
     }
