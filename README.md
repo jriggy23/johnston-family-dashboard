@@ -186,56 +186,70 @@ pipeline depends on.
 ## Production setup (Apple Sign In + Azure)
 
 These steps are done once, outside the codebase, before the deployed site can
-authenticate users. The app code is already wired for all of it — these steps
-just provide the credentials and resources it expects.
+authenticate users. The app code is already wired for all of it.
 
-### 1. Apple Developer portal
+**Provisioned resources** (Visual Studio Enterprise subscription):
 
-You need an Apple Developer account (already covered by the Family Map's $99/yr
-membership). In [developer.apple.com](https://developer.apple.com/account) →
-**Certificates, Identifiers & Profiles**:
+| | |
+| --- | --- |
+| Resource group | `johnston-family-dashboard` (eastus2) |
+| Static Web App | `johnston-family-dashboard` — **Standard** SKU |
+| Default host | `proud-hill-0886c370f.7.azurestaticapps.net` |
+| Custom domain | **`familydash.jkcons.com`** |
+| Deploy secret | `AZURE_STATIC_WEB_APPS_API_TOKEN` (set in GitHub Actions) |
 
-1. **App ID** — Identifiers → **+** → *App IDs* → *App*. Enable the
-   **Sign in with Apple** capability. (Acts as the primary identifier.)
+### 1. Custom domain (`familydash.jkcons.com`)
+
+DNS for `jkcons.com` is hosted at **GoDaddy**.
+
+1. In GoDaddy DNS, add a **CNAME**: `familydash` →
+   `proud-hill-0886c370f.7.azurestaticapps.net`.
+2. Register it on the SWA (validates via the CNAME and issues a managed TLS cert):
+   ```bash
+   az staticwebapp hostname set -n johnston-family-dashboard \
+     -g johnston-family-dashboard --hostname familydash.jkcons.com
+   ```
+
+### 2. Apple Developer portal
+
+In [developer.apple.com](https://developer.apple.com/account) → **Certificates,
+Identifiers & Profiles**:
+
+1. **App ID** — Identifiers → **+** → *App IDs* → *App*. Enable **Sign in with Apple**.
 2. **Services ID** — Identifiers → **+** → *Services IDs*. This identifier (e.g.
-   `com.johnston.dashboard.web`) is your **`APPLE_CLIENT_ID`**. Enable
-   **Sign in with Apple**, then **Configure**:
+   `com.jkcons.familydash.web`) is your **`APPLE_CLIENT_ID`**. Enable **Sign in with
+   Apple**, then **Configure**:
    - **Primary App ID**: the App ID from step 1.
-   - **Domains**: your SWA host, e.g. `<app-name>.azurestaticapps.net` (and your
-     custom domain if you add one).
-   - **Return URLs**: `https://<your-swa-host>/.auth/login/apple/callback`
-3. **Sign in with Apple key** — Keys → **+**. Enable *Sign in with Apple*,
-   download the **`.p8`** private key (one-time download). Note the **Key ID**
-   and your **Team ID**.
+   - **Domains and Subdomains**: `familydash.jkcons.com`
+   - **Return URLs**: `https://familydash.jkcons.com/.auth/login/apple/callback`
+   - Apple verifies the domain by downloading
+     `https://familydash.jkcons.com/.well-known/apple-developer-domain-association.txt`.
+     **Download the association file from Apple and replace the placeholder at
+     [`public/.well-known/apple-developer-domain-association.txt`](public/.well-known/apple-developer-domain-association.txt)**,
+     then deploy before clicking *Verify*. (Anonymous access to `/.well-known/*`
+     is already allowed in [`staticwebapp.config.json`](staticwebapp.config.json).)
+3. **Sign in with Apple key** — Keys → **+**. Enable *Sign in with Apple*, download
+   the **`.p8`** key (one-time). Note the **Key ID** and your **Team ID**.
 
-### 2. Generate the client secret (`APPLE_CLIENT_SECRET`)
+### 3. Generate the client secret (`APPLE_CLIENT_SECRET`)
 
-Apple's "client secret" is a short-lived **ES256 JWT** signed with the `.p8` key.
-Inputs: Team ID (issuer), the Services ID (subject/audience `https://appleid.apple.com`),
-Key ID (header `kid`), and the `.p8`. Apple caps its lifetime at **6 months**, so
-this value must be **regenerated and re-set** before it expires. Generate it with
-a small script (Apple documents the JWT claims) and use the output as
-`APPLE_CLIENT_SECRET`.
+Apple's "client secret" is a short-lived **ES256 JWT** signed with the `.p8` key:
+Team ID (issuer), Services ID (subject), audience `https://appleid.apple.com`, Key
+ID (header `kid`). Apple caps its lifetime at **6 months**, so it must be
+**regenerated and re-set** before it expires.
 
-### 3. Azure Static Web App
+### 4. App settings + deploy
 
-1. Create a **Static Web App** on the **Standard** plan in the personal Azure
-   subscription (Standard is required for custom OIDC + bring-your-own Functions —
-   see *Hosting & Infrastructure* above).
-2. Copy its **deployment token** → add as the GitHub Actions secret
-   **`AZURE_STATIC_WEB_APPS_API_TOKEN`** (repo → Settings → Secrets and variables
-   → Actions). The CI/CD pipeline uses it to deploy.
-3. In the Static Web App → **Configuration** → application settings, add:
-   - `APPLE_CLIENT_ID` — the Services ID from step 1.
-   - `APPLE_CLIENT_SECRET` — the JWT from step 2.
-   - `TMDB_API_KEY` *(optional)* — enables live streaming/theatrical; falls back
-     to mock data when unset.
+Set the application settings on the SWA (names match `clientIdSettingName` /
+`clientSecretSettingName` in [`staticwebapp.config.json`](staticwebapp.config.json)):
 
-   These names match the `clientIdSettingName` / `clientSecretSettingName` already
-   declared in [`staticwebapp.config.json`](staticwebapp.config.json).
+```bash
+az staticwebapp appsettings set -n johnston-family-dashboard -g johnston-family-dashboard \
+  --setting-names APPLE_CLIENT_ID=<services-id> APPLE_CLIENT_SECRET=<jwt> TMDB_API_KEY=<optional>
+```
 
-### 4. Deploy
-
-Push to `main` (or merge a PR). The pipeline builds and deploys; once app settings
-are in place, **"Sign in with Apple"** completes on the deployed host and the
-signed-in identity is visible at `/.auth/me`.
+Then push to `main` (or merge a PR). Once DNS, the association file, and the app
+settings are in place, **"Sign in with Apple"** completes at
+`https://familydash.jkcons.com` and the signed-in identity is visible at
+`/.auth/me`. `TMDB_API_KEY` is optional — streaming/theatrical fall back to mock
+data when it's unset.

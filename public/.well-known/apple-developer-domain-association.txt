@@ -1,0 +1,7 @@
+PLACEHOLDER — replace this file's entire contents with the domain-association
+text that Apple generates when you add familydash.jkcons.com under your Services
+ID (Sign in with Apple → Configure → Domains and Subdomains → Download).
+
+Served publicly at:
+https://familydash.jkcons.com/.well-known/apple-developer-domain-association.txt
+(anonymous access is allowed via staticwebapp.config.json; do not delete that route).

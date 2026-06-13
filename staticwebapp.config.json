@@ -31,6 +31,10 @@
       "rewrite": "/.auth/logout"
     },
     {
+      "route": "/.well-known/*",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
       "route": "/api/*",
       "allowedRoles": ["authenticated"]
     },
@@ -47,6 +51,6 @@
   },
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/assets/*", "*.{css,js,ico,png,jpg,svg,webp,woff,woff2}"]
+    "exclude": ["/assets/*", "/.well-known/*", "*.{css,js,ico,png,jpg,svg,webp,woff,woff2}"]
   }
 }
