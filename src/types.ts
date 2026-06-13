@@ -61,10 +61,11 @@ export interface CalendarInfo {
 // a highlight color (palette-assigned, or derived from their photo), and an
 // optional uploaded avatar (stored separately in the settings store).
 export interface FamilyCalendarMember {
-  id: string
+  id: string // stable calendar key (UUID slug) or fallback slug
   name: string
   initials: string
   calendarSource: string // matches CalendarEvent.calendar (iCloud display name)
+  calendarId?: string // stable calendar URL, when discovered
   color: string
   textColor: string
   photoKey?: string // settings key holding the avatar data-URL, e.g. memberPhoto_emma

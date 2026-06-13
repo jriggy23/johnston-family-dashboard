@@ -22,6 +22,8 @@ function todayLabel(): string {
 function Dashboard({ user }: { user: ClientPrincipal }) {
   const { calendar, news, theatrical } = useDashboardData()
   const { members, saveMember } = useFamilyMembers()
+  // Hidden calendars are excluded from the header avatars too.
+  const visibleMembers = members.filter((m) => !m.hidden)
 
   return (
     <div className="app">
@@ -32,7 +34,7 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
         </div>
         <div className="header-right">
           <div className="avatars">
-            {members.map((m) =>
+            {visibleMembers.map((m) =>
               m.photo ? (
                 <img
                   key={m.id}

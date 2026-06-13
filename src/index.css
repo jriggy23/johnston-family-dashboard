@@ -188,6 +188,19 @@ h3 {
   letter-spacing: 0.04em;
 }
 
+.cal-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.cal-editor-hidden {
+  opacity: 0.55;
+}
+
 .cal-legend {
   display: flex;
   flex-wrap: wrap;

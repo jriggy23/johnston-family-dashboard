@@ -1,9 +1,9 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { fetchCalendarRange, fetchCalendars } from '../api/client'
-import { attributeEvents, readableTextColor } from '../data/members'
+import { fetchCalendarRange } from '../api/client'
+import { attributeEvents } from '../data/members'
 import type { FamilyMembersState, MemberWithPhoto } from '../hooks/useFamilyMembers'
 import { processAvatar } from '../lib/avatar'
-import type { CalendarEvent, CalendarInfo } from '../types'
+import type { CalendarEvent } from '../types'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -83,17 +83,15 @@ function EventChip({ event, members }: { event: CalendarEvent; members: MemberWi
   )
 }
 
-// Per-member editor: upload/replace/remove a photo (downscaled + color derived
-// client-side), and map the member to one of the discovered iCloud calendars.
-// Initials remain the fallback avatar.
+// Per-member editor over the dynamically-discovered calendars: show/hide each
+// calendar, and upload/replace/remove a photo (downscaled + highlight color
+// derived client-side). Initials remain the fallback avatar.
 function MemberEditor({
   members,
   saveMember,
-  calendars,
 }: {
   members: MemberWithPhoto[]
   saveMember: FamilyMembersState['saveMember']
-  calendars: CalendarInfo[]
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -104,7 +102,7 @@ function MemberEditor({
     setError('')
     try {
       const { dataUrl, color } = await processAvatar(file)
-      await saveMember(id, { color, textColor: readableTextColor(color) }, dataUrl)
+      await saveMember(id, { color }, dataUrl)
     } catch {
       setError('Could not process that image. Try a different photo.')
     } finally {
@@ -114,55 +112,40 @@ function MemberEditor({
 
   return (
     <div className="cal-editor">
-      {members.map((m) => {
-        // Include the current source as an option even if discovery hasn't run
-        // or doesn't list it, so the select always reflects the saved value.
-        const options = calendars.map((c) => c.name)
-        if (m.calendarSource && !options.includes(m.calendarSource)) {
-          options.unshift(m.calendarSource)
-        }
-        return (
-          <div className="cal-editor-row" key={m.id}>
-            <Avatar member={m} size={36} />
-            <span className="cal-editor-name">{m.name}</span>
-            <label className="cal-editor-field">
-              <span className="cal-editor-label">Calendar</span>
-              <select
-                className="cal-select"
-                value={m.calendarSource}
-                onChange={(e) => saveMember(m.id, { calendarSource: e.target.value })}
-              >
-                {options.length === 0 ? <option value={m.calendarSource}>{m.calendarSource}</option> : null}
-                {options.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="btn-small">
-              {busy === m.id ? 'Working…' : m.photo ? 'Replace' : 'Upload'}
-              <input
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                disabled={busy !== null}
-                onChange={(e) => onPick(m.id, e.target.files?.[0])}
-              />
-            </label>
-            {m.photo ? (
-              <button
-                type="button"
-                className="btn-small btn-ghost"
-                disabled={busy !== null}
-                onClick={() => saveMember(m.id, {}, null)}
-              >
-                Remove
-              </button>
-            ) : null}
-          </div>
-        )
-      })}
+      {members.map((m) => (
+        <div className={`cal-editor-row${m.hidden ? ' cal-editor-hidden' : ''}`} key={m.id}>
+          <Avatar member={m} size={36} />
+          <span className="cal-editor-name">{m.name}</span>
+          <label className="cal-toggle">
+            <input
+              type="checkbox"
+              checked={!m.hidden}
+              onChange={() => saveMember(m.id, { hidden: !m.hidden })}
+            />
+            Show
+          </label>
+          <label className="btn-small">
+            {busy === m.id ? 'Working…' : m.photo ? 'Replace' : 'Upload'}
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              disabled={busy !== null}
+              onChange={(e) => onPick(m.id, e.target.files?.[0])}
+            />
+          </label>
+          {m.photo ? (
+            <button
+              type="button"
+              className="btn-small btn-ghost"
+              disabled={busy !== null}
+              onClick={() => saveMember(m.id, {}, null)}
+            >
+              Remove
+            </button>
+          ) : null}
+        </div>
+      ))}
       {error ? <div className="weather-error">{error}</div> : null}
     </div>
   )
@@ -180,7 +163,6 @@ export default function WeeklyCalendar({
   saveMember?: FamilyMembersState['saveMember']
 }) {
   const [editing, setEditing] = useState(false)
-  const [calendars, setCalendars] = useState<CalendarInfo[]>([])
   const [weekOffset, setWeekOffset] = useState(0)
   const [weekLoading, setWeekLoading] = useState(false)
   // Cache fetched weeks (offset → events) in a ref so navigating back and forth
@@ -220,23 +202,22 @@ export default function WeeklyCalendar({
     }
   }, [weekOffset])
 
-  // Load the discoverable calendars once, when the editor is first opened.
-  useEffect(() => {
-    if (!editing || calendars.length > 0) return
-    let active = true
-    fetchCalendars()
-      .then((list) => active && setCalendars(list))
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [editing, calendars.length])
-
   const sourceEvents = weekOffset === 0 ? events : cacheRef.current[weekOffset] ?? []
   const isLoading = weekOffset === 0 ? loading : weekLoading && !cacheRef.current[weekOffset]
 
+  // Hidden calendars are excluded from the grid + legend (the editor still lists
+  // them so they can be re-shown). Drop their events, then attribute the rest to
+  // the visible members.
+  const visibleMembers = members.filter((m) => !m.hidden)
+  const hiddenSources = new Set(
+    members.filter((m) => m.hidden).map((m) => m.calendarSource.trim().toLowerCase()),
+  )
+  const shownEvents = sourceEvents.filter(
+    (e) => !hiddenSources.has(e.calendar.trim().toLowerCase()),
+  )
+
   // Attribute events to members, then bucket into the 7 day columns.
-  const attributed = attributeEvents(sourceEvents, members)
+  const attributed = attributeEvents(shownEvents, visibleMembers)
   const byDay: CalendarEvent[][] = days.map(() => [])
   for (const e of attributed) {
     const d = new Date(e.start)
@@ -292,10 +273,10 @@ export default function WeeklyCalendar({
       </div>
 
       {editing && saveMember ? (
-        <MemberEditor members={members} saveMember={saveMember} calendars={calendars} />
+        <MemberEditor members={members} saveMember={saveMember} />
       ) : (
         <div className="cal-legend">
-          {members.map((m) => (
+          {visibleMembers.map((m) => (
             <span className="cal-legend-item" key={m.id}>
               <Avatar member={m} size={24} />
               <span className="cal-legend-name">{m.name}</span>
@@ -325,7 +306,7 @@ export default function WeeklyCalendar({
                   {empty ? (
                     <div className="cal-empty">—</div>
                   ) : (
-                    byDay[i].map((e) => <EventChip key={e.id} event={e} members={members} />)
+                    byDay[i].map((e) => <EventChip key={e.id} event={e} members={visibleMembers} />)
                   )}
                 </div>
               </div>
