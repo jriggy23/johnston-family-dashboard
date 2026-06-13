@@ -1,0 +1,89 @@
+name: CI/CD
+
+# Build, validate, and deploy the Johnston Family Dashboard to Azure Static Web Apps.
+#   - Push to main          -> validate, then deploy to production
+#   - Pull request to main  -> validate, then deploy to a preview environment
+#   - PR closed             -> tear down that preview environment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ci-cd-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint, typecheck, test, build
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # --- Frontend ---
+      - name: Install frontend deps
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Build frontend
+        run: npm run build
+
+      # --- API (Azure Functions) ---
+      - name: Install API deps
+        working-directory: api
+        run: npm ci
+      - name: Build API
+        working-directory: api
+        run: npm run build
+
+  deploy:
+    name: Deploy to Azure Static Web Apps
+    needs: validate
+    # Run on pushes to main and on PR open/sync/reopen — skip on PR close (handled below).
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event_name == 'push' && 'production' || format('preview-pr-{0}', github.event.pull_request.number) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          # Build is driven by Oryx using the locations below.
+          app_location: "/"
+          api_location: "api"
+          output_location: "dist"
+
+  close_preview:
+    name: Close preview environment
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close

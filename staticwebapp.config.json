@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json.schemastore.org/staticwebapp.config.json",
+  "auth": {
+    "identityProviders": {
+      "customOpenIdConnectProviders": {
+        "apple": {
+          "registration": {
+            "clientIdSettingName": "APPLE_CLIENT_ID",
+            "clientCredential": {
+              "clientSecretSettingName": "APPLE_CLIENT_SECRET"
+            },
+            "openIdConnectConfiguration": {
+              "wellKnownOpenIdConfiguration": "https://appleid.apple.com/.well-known/openid-configuration"
+            }
+          },
+          "login": {
+            "nameClaimType": "https://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+            "scopes": ["openid", "email", "name"]
+          }
+        }
+      }
+    }
+  },
+  "routes": [
+    {
+      "route": "/login",
+      "rewrite": "/.auth/login/apple"
+    },
+    {
+      "route": "/logout",
+      "rewrite": "/.auth/logout"
+    },
+    {
+      "route": "/.well-known/*",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
+      "route": "/api/*",
+      "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/*",
+      "allowedRoles": ["authenticated"]
+    }
+  ],
+  "responseOverrides": {
+    "401": {
+      "redirect": "/.auth/login/apple",
+      "statusCode": 302
+    }
+  },
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/assets/*", "/.well-known/*", "*.{css,js,ico,png,jpg,svg,webp,woff,woff2}"]
+  }
+}
