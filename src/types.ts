@@ -70,3 +70,15 @@ export interface TheatricalRelease {
 }
 
 export type StreamingMode = 'popular' | 'new' | 'trending'
+
+export interface ShowDay {
+  label: string // "Today" or a weekday e.g. "Sun"
+  date: string // e.g. "Jun 14"
+  times: string[] // e.g. ["1:00 PM", "4:05 PM"]
+}
+
+export interface ShowtimeMovie {
+  title: string
+  normalized: string
+  days: ShowDay[]
+}

@@ -122,6 +122,44 @@ h3 {
   font-weight: 500;
 }
 
+/* --- Theatrical showtimes --- */
+
+.release-date-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: var(--radius-md);
+  margin-top: 3px;
+  color: #efa033;
+  background: #3a2a10;
+  white-space: nowrap;
+}
+
+.showtimes {
+  margin-top: 5px;
+}
+
+.showtimes-day {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 3px;
+}
+
+.showtime-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.showtime-chip {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text);
+  white-space: nowrap;
+}
+
 /* --- Streaming --- */
 
 .poster {
