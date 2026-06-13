@@ -8,6 +8,7 @@ import type {
   CalendarEvent,
   NewsItem,
   PointWeather,
+  ShowtimeMovie,
   StreamingMode,
   StreamingTitle,
   TheatricalRelease,
@@ -133,6 +134,23 @@ export function mapTheatrical(
 export async function fetchTheatrical(): Promise<TheatricalRelease[]> {
   const data = await getJson<TheatricalResponse>('/api/theatrical')
   return mapTheatrical(data.releases)
+}
+
+// --- Showtimes (local Epic, scraped via /api/showtimes) ---
+
+interface ShowtimesResponse {
+  source: string
+  theater: string
+  movies: ShowtimeMovie[]
+}
+
+export function normalizeTitle(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+export async function fetchShowtimes(): Promise<{ theater: string; movies: ShowtimeMovie[] }> {
+  const data = await getJson<ShowtimesResponse>('/api/showtimes')
+  return { theater: data.theater, movies: data.movies }
 }
 
 // --- Calendar (iCloud via CalDAV through /api/calendar) ---
