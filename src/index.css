@@ -136,6 +136,35 @@ h3 {
   flex-shrink: 0;
 }
 
+.forecast-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.forecast-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1 0 auto;
+  min-width: 38px;
+}
+
+.forecast-dow {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.forecast-temps {
+  display: flex;
+  gap: 4px;
+  font-size: 11px;
+}
+
 .weather-add {
   width: 100%;
   height: 100%;

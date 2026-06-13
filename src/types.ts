@@ -11,12 +11,21 @@ export interface FamilyMember {
   }
 }
 
+export interface DailyForecast {
+  date: string // ISO "YYYY-MM-DD"
+  highF: number
+  lowF: number
+  condition: string
+  icon: string
+}
+
 export interface PointWeather {
   tempF: number
   highF: number
   lowF: number
   condition: string
   icon: string
+  daily?: DailyForecast[]
 }
 
 export interface WeatherCardConfig {

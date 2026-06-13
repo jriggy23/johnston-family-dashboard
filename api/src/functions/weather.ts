@@ -26,8 +26,8 @@ export async function weather(
     `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}` +
     `&longitude=${encodeURIComponent(lon)}` +
     `&current=temperature_2m,weather_code` +
-    `&daily=temperature_2m_max,temperature_2m_min` +
-    `&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
+    `&temperature_unit=fahrenheit&timezone=auto&forecast_days=7`
 
   try {
     const res = await fetch(url)
@@ -37,16 +37,32 @@ export async function weather(
     }
     const data = (await res.json()) as {
       current: { temperature_2m: number; weather_code: number }
-      daily: { temperature_2m_max: number[]; temperature_2m_min: number[] }
+      daily: {
+        time: string[]
+        weather_code: number[]
+        temperature_2m_max: number[]
+        temperature_2m_min: number[]
+      }
     }
     const { condition, icon } = describe(data.current.weather_code)
+    const daily = data.daily.time.map((date, i) => {
+      const d = describe(data.daily.weather_code[i])
+      return {
+        date,
+        highF: Math.round(data.daily.temperature_2m_max[i]),
+        lowF: Math.round(data.daily.temperature_2m_min[i]),
+        condition: d.condition,
+        icon: d.icon,
+      }
+    })
     return {
       jsonBody: {
         tempF: Math.round(data.current.temperature_2m),
-        highF: Math.round(data.daily.temperature_2m_max[0]),
-        lowF: Math.round(data.daily.temperature_2m_min[0]),
+        highF: daily[0].highF,
+        lowF: daily[0].lowF,
         condition,
         icon,
+        daily,
       },
     }
   } catch (err) {
