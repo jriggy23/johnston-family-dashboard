@@ -46,7 +46,7 @@ export interface CalendarEvent {
 export interface NewsItem {
   id: string
   title: string
-  category: string
+  source: string
   ago: string
   link: string
 }

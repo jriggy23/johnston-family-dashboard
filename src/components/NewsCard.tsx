@@ -5,11 +5,8 @@ export default function NewsCard({ items }: { items: NewsItem[] }) {
     <div className="card">
       <div className="card-header">
         <span className="card-title">News</span>
-        <span
-          className="card-badge"
-          style={{ background: '#4a1b0c', color: '#f5c4b3' }}
-        >
-          Fox News
+        <span className="dim" style={{ marginLeft: 'auto', fontSize: 12 }}>
+          Top stories
         </span>
       </div>
       {items.map((n, i) => (
@@ -23,12 +20,15 @@ export default function NewsCard({ items }: { items: NewsItem[] }) {
         >
           <a
             href={n.link}
+            target="_blank"
+            rel="noopener noreferrer"
             style={{ color: 'var(--text)', textDecoration: 'none', fontSize: 14, fontWeight: 500, lineHeight: 1.4 }}
           >
             {n.title}
           </a>
           <div className="dim" style={{ fontSize: 12, marginTop: 2 }}>
-            {n.category} · {n.ago}
+            <span className="news-source">{n.source}</span>
+            {n.ago ? ` · ${n.ago}` : ''}
           </div>
         </div>
       ))}
