@@ -8,8 +8,8 @@ const CARD_COUNT = 2
 type Slot = WeatherCardConfig | null
 type WeatherState = PointWeather | 'loading' | 'error' | undefined
 
-function WeatherIcon({ icon }: { icon: string }) {
-  const common = { width: 28, height: 28, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true }
+function WeatherIcon({ icon, size = 28 }: { icon: string; size?: number }) {
+  const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': true }
   if (icon === 'rain') {
     return (
       <svg {...common} stroke="#85b7eb" strokeWidth="1.6" strokeLinecap="round">
@@ -35,6 +35,14 @@ function WeatherIcon({ icon }: { icon: string }) {
 
 function emptySlots(): Slot[] {
   return Array.from({ length: CARD_COUNT }, () => null)
+}
+
+// Parse "YYYY-MM-DD" as a local date and label it (index 0 = today).
+function dayLabel(dateStr: string, index: number): string {
+  if (index === 0) return 'Today'
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, (m ?? 1) - 1, d ?? 1)
+  return date.toLocaleDateString(undefined, { weekday: 'short' })
 }
 
 export default function WeatherCards() {
@@ -195,6 +203,20 @@ function WeatherBody({ state }: { state: WeatherState }) {
       <div className="dim" style={{ fontSize: 12, marginTop: 4 }}>
         {state.condition} · H {Math.round(state.highF)} / L {Math.round(state.lowF)}
       </div>
+      {state.daily && state.daily.length > 0 && (
+        <div className="forecast-row">
+          {state.daily.map((d, i) => (
+            <div className="forecast-day" key={d.date}>
+              <div className="forecast-dow">{dayLabel(d.date, i)}</div>
+              <WeatherIcon icon={d.icon} size={18} />
+              <div className="forecast-temps">
+                <span>{d.highF}°</span>
+                <span className="dim">{d.lowF}°</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   )
 }
