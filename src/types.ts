@@ -48,14 +48,24 @@ export interface CalendarEvent {
   color: string // member color when matched, else the event's own iCloud color
 }
 
+// A calendar discovered in the configured iCloud account(s), for mapping a
+// member's calendarSource to a real shared-calendar name.
+export interface CalendarInfo {
+  name: string
+  color?: string
+  id?: string
+  account: string
+}
+
 // A family member: their identity, the iCloud calendar their events come from,
 // a highlight color (palette-assigned, or derived from their photo), and an
 // optional uploaded avatar (stored separately in the settings store).
 export interface FamilyCalendarMember {
-  id: string
+  id: string // stable calendar key (UUID slug) or fallback slug
   name: string
   initials: string
   calendarSource: string // matches CalendarEvent.calendar (iCloud display name)
+  calendarId?: string // stable calendar URL, when discovered
   color: string
   textColor: string
   photoKey?: string // settings key holding the avatar data-URL, e.g. memberPhoto_emma

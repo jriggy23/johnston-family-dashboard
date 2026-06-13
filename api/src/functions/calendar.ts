@@ -9,6 +9,7 @@ import * as nodeIcal from 'node-ical'
 const ICLOUD_CALDAV_URL = 'https://caldav.icloud.com'
 const DEFAULT_DAYS = 14
 const MAX_EVENTS = 60
+const MAX_RANGE_DAYS = 60 // cap any explicit start/end span
 
 interface IcloudAccount {
   label?: string
@@ -163,6 +164,28 @@ async function fetchAccountEvents(
   return events
 }
 
+// Resolve the fetch window. An explicit `start`+`end` (ISO) is used when valid
+// (clamped to MAX_RANGE_DAYS) so the client can request any week, past or
+// future; otherwise fall back to [now, now + `days`].
+function resolveRange(request: HttpRequest): { rangeStart: Date; rangeEnd: Date } {
+  const startParam = request.query.get('start')
+  const endParam = request.query.get('end')
+  if (startParam && endParam) {
+    const s = new Date(startParam)
+    const e = new Date(endParam)
+    if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && e.getTime() > s.getTime()) {
+      const maxEnd = new Date(s.getTime() + MAX_RANGE_DAYS * 86400_000)
+      return { rangeStart: s, rangeEnd: e.getTime() > maxEnd.getTime() ? maxEnd : e }
+    }
+  }
+  const days = Math.min(
+    MAX_RANGE_DAYS,
+    Math.max(1, Number(request.query.get('days') ?? DEFAULT_DAYS) || DEFAULT_DAYS),
+  )
+  const rangeStart = new Date()
+  return { rangeStart, rangeEnd: new Date(rangeStart.getTime() + days * 86400_000) }
+}
+
 export async function calendar(
   request: HttpRequest,
   context: InvocationContext,
@@ -172,9 +195,7 @@ export async function calendar(
     return { jsonBody: { source: 'unconfigured', events: [] } }
   }
 
-  const days = Math.min(60, Math.max(1, Number(request.query.get('days') ?? DEFAULT_DAYS) || DEFAULT_DAYS))
-  const rangeStart = new Date()
-  const rangeEnd = new Date(rangeStart.getTime() + days * 86400_000)
+  const { rangeStart, rangeEnd } = resolveRange(request)
 
   const all: CalendarEventDto[] = []
   let failures = 0
@@ -206,4 +227,83 @@ app.http('calendar', {
   authLevel: 'anonymous',
   route: 'calendar',
   handler: calendar,
+})
+
+// --- Calendar discovery -------------------------------------------------------
+// Read-only listing of the event calendars visible in the configured iCloud
+// account(s), so the family roster's `calendarSource` values can be aligned to
+// the real shared-calendar names. No credentials are returned.
+
+interface CalendarInfoDto {
+  name: string
+  color?: string
+  id?: string // calendar URL
+  account: string // friendly label, never the raw Apple ID
+}
+
+function normalizeColor(color?: string): string | undefined {
+  if (!color) return undefined
+  return /^#[0-9a-f]{8}$/i.test(color) ? color.slice(0, 7) : color
+}
+
+async function fetchAccountCalendars(
+  account: IcloudAccount,
+  accountLabel: string,
+): Promise<CalendarInfoDto[]> {
+  const { createDAVClient } = await import('tsdav')
+  const client = await createDAVClient({
+    serverUrl: ICLOUD_CALDAV_URL,
+    credentials: { username: account.username, password: account.appPassword },
+    authMethod: 'Basic',
+    defaultAccountType: 'caldav',
+  })
+
+  const calendars = await client.fetchCalendars()
+  return calendars
+    .filter((cal) => {
+      const comps = (cal.components as string[] | undefined) ?? []
+      return comps.length === 0 || comps.includes('VEVENT')
+    })
+    .map((cal) => ({
+      name:
+        typeof cal.displayName === 'string' && cal.displayName ? cal.displayName : 'Calendar',
+      color: normalizeColor(typeof cal.calendarColor === 'string' ? cal.calendarColor : undefined),
+      id: typeof cal.url === 'string' ? cal.url : undefined,
+      account: accountLabel,
+    }))
+}
+
+export async function calendars(
+  _request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  const accounts = loadAccounts()
+  if (accounts.length === 0) {
+    return { jsonBody: { source: 'unconfigured', calendars: [] } }
+  }
+
+  const all: CalendarInfoDto[] = []
+  let failures = 0
+  for (let i = 0; i < accounts.length; i++) {
+    const label = accounts[i].label ?? `Account ${i + 1}`
+    try {
+      all.push(...(await fetchAccountCalendars(accounts[i], label)))
+    } catch (err) {
+      failures++
+      context.error(`iCloud account "${label}" calendar discovery failed: ${String(err)}`)
+    }
+  }
+
+  if (all.length === 0 && failures > 0) {
+    return { status: 502, jsonBody: { error: 'calendar upstream error' } }
+  }
+
+  return { jsonBody: { source: 'icloud', calendars: all } }
+}
+
+app.http('calendars', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'calendars',
+  handler: calendars,
 })
