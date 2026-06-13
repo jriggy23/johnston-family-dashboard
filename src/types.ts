@@ -11,13 +11,19 @@ export interface FamilyMember {
   }
 }
 
-export interface Weather {
-  memberId: string
+export interface PointWeather {
   tempF: number
   highF: number
   lowF: number
   condition: string
   icon: string
+}
+
+export interface WeatherCardConfig {
+  query: string // what the user typed (ZIP or city)
+  label: string // resolved display label, e.g. "Austin, TX"
+  latitude: number
+  longitude: number
 }
 
 export interface CalendarEvent {

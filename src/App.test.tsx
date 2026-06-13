@@ -56,10 +56,11 @@ describe('App (authenticated)', () => {
     expect(screen.getByText('Upcoming theatrical releases')).toBeInTheDocument()
   })
 
-  it('shows a weather tile for each member location', async () => {
+  it('renders configurable weather cards (unset when no saved config)', async () => {
     renderApp()
-    expect(await screen.findByText(/Austin, TX/)).toBeInTheDocument()
-    expect(screen.getByText(/Denver, CO/)).toBeInTheDocument()
+    // /api/settings is mocked to 404, so both cards fall back to the empty state.
+    const setButtons = await screen.findAllByText(/Set location/)
+    expect(setButtons).toHaveLength(2)
   })
 
   it('shows the signed-in user and a sign-out link', async () => {

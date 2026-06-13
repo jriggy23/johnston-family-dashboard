@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  fetchWeatherForMembers,
+  fetchWeatherPoint,
   formatReleaseDate,
   formatWhen,
+  geocode,
+  getSetting,
   mapCalendar,
   mapStreaming,
   mapTheatrical,
 } from './client'
-import type { FamilyMember } from '../types'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -92,51 +93,56 @@ describe('mapCalendar', () => {
   })
 })
 
-describe('fetchWeatherForMembers', () => {
-  const members: FamilyMember[] = [
-    {
-      id: 'a',
-      name: 'A',
-      initials: 'A',
-      color: '#000',
-      textColor: '#fff',
-      location: { label: 'Austin', latitude: 30.27, longitude: -97.74 },
-    },
-    {
-      id: 'b',
-      name: 'B',
-      initials: 'B',
-      color: '#000',
-      textColor: '#fff',
-      location: { label: 'Denver', latitude: 39.74, longitude: -104.99 },
-    },
-  ]
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  })
+}
 
-  it('attaches memberId and keeps members whose lookup succeeds', async () => {
+describe('fetchWeatherPoint', () => {
+  it('requests the given coordinates and returns the point weather', async () => {
+    const fetchMock = vi.fn<(url: RequestInfo | URL) => Promise<Response>>(async () =>
+      jsonResponse({ tempF: 72, highF: 80, lowF: 60, condition: 'Clear', icon: 'sun' }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const w = await fetchWeatherPoint(30.27, -97.74)
+    expect(w).toMatchObject({ tempF: 72, condition: 'Clear' })
+    const url = String(fetchMock.mock.calls[0][0])
+    expect(url).toContain('lat=30.27')
+    expect(url).toContain('lon=-97.74')
+  })
+})
+
+describe('geocode', () => {
+  it('echoes the query alongside the resolved location', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = typeof input === 'string' ? input : input.toString()
-        if (url.includes('lat=30.27')) {
-          return new Response(
-            JSON.stringify({ tempF: 94, highF: 96, lowF: 74, condition: 'Clear', icon: 'sun' }),
-            { status: 200, headers: { 'content-type': 'application/json' } },
-          )
-        }
-        return new Response('upstream error', { status: 502 })
-      }),
+      vi.fn(async () => jsonResponse({ label: 'Austin, TX', latitude: 30.27, longitude: -97.74 })),
     )
-
-    const weather = await fetchWeatherForMembers(members)
-    expect(weather).toHaveLength(1)
-    expect(weather[0]).toMatchObject({ memberId: 'a', tempF: 94, condition: 'Clear' })
+    const result = await geocode('78701')
+    expect(result).toEqual({ query: '78701', label: 'Austin, TX', latitude: 30.27, longitude: -97.74 })
   })
 
-  it('throws when every member lookup fails', async () => {
+  it('throws when the location is not found', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('not found', { status: 404 })))
+    await expect(geocode('zzzzz')).rejects.toThrow()
+  })
+})
+
+describe('getSetting', () => {
+  it('returns the stored value', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response('error', { status: 502 })),
+      vi.fn(async () => jsonResponse({ key: 'weatherCards', value: [{ label: 'Austin, TX' }] })),
     )
-    await expect(fetchWeatherForMembers(members)).rejects.toThrow()
+    const value = await getSetting<{ label: string }[]>('weatherCards')
+    expect(value).toEqual([{ label: 'Austin, TX' }])
+  })
+
+  it('returns null when the key is unset', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ key: 'weatherCards', value: null })))
+    expect(await getSetting('weatherCards')).toBeNull()
   })
 })

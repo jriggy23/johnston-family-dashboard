@@ -4,7 +4,6 @@ import type {
   NewsItem,
   StreamingTitle,
   TheatricalRelease,
-  Weather,
 } from '../types'
 
 // Placeholder data used until the live APIs are wired in.
@@ -44,12 +43,6 @@ export const familyMembers: FamilyMember[] = [
     textColor: '#f4c0d1',
     location: { label: 'Chicago, IL', latitude: 41.8781, longitude: -87.6298 },
   },
-]
-
-export const mockWeather: Weather[] = [
-  { memberId: 'john', tempF: 94, highF: 96, lowF: 74, condition: 'Sunny', icon: 'sun' },
-  { memberId: 'sarah', tempF: 71, highF: 78, lowF: 55, condition: 'Cloudy', icon: 'cloud' },
-  { memberId: 'emma', tempF: 63, highF: 66, lowF: 58, condition: 'Rain', icon: 'rain' },
 ]
 
 export const mockEvents: CalendarEvent[] = [

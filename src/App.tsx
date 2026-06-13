@@ -4,7 +4,7 @@ import LoginScreen from './components/LoginScreen'
 import NewsCard from './components/NewsCard'
 import StreamingSection from './components/StreamingSection'
 import TheatricalSection from './components/TheatricalSection'
-import WeatherStrip from './components/WeatherStrip'
+import WeatherCards from './components/WeatherCards'
 import { useAuth } from './auth/AuthContext'
 import { useDashboardData } from './hooks/useDashboardData'
 import { familyMembers } from './data/mock'
@@ -19,7 +19,7 @@ function todayLabel(): string {
 }
 
 function Dashboard({ user }: { user: ClientPrincipal }) {
-  const { calendar, weather, news, streaming, theatrical } = useDashboardData()
+  const { calendar, news, streaming, theatrical } = useDashboardData()
 
   return (
     <div className="app">
@@ -45,7 +45,7 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
         </div>
       </header>
 
-      <WeatherStrip members={familyMembers} weather={weather} />
+      <WeatherCards />
 
       <div className="grid grid-main">
         <CalendarCard events={calendar} />

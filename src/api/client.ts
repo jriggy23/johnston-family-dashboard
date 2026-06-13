@@ -6,11 +6,11 @@
 
 import type {
   CalendarEvent,
-  FamilyMember,
   NewsItem,
+  PointWeather,
   StreamingTitle,
   TheatricalRelease,
-  Weather,
+  WeatherCardConfig,
 } from '../types'
 import { serviceColors } from '../data/serviceColors'
 
@@ -20,33 +20,38 @@ async function getJson<T>(url: string): Promise<T> {
   return (await res.json()) as T
 }
 
-// --- Weather (Open-Meteo via /api/weather; one call per member's location) ---
+// --- Weather (Open-Meteo via /api/weather) ---
 
-interface WeatherResponse {
-  tempF: number
-  highF: number
-  lowF: number
-  condition: string
-  icon: string
+export async function fetchWeatherPoint(
+  latitude: number,
+  longitude: number,
+): Promise<PointWeather> {
+  return getJson<PointWeather>(`/api/weather?lat=${latitude}&lon=${longitude}`)
 }
 
-export async function fetchWeatherForMembers(
-  members: FamilyMember[],
-): Promise<Weather[]> {
-  const settled = await Promise.allSettled(
-    members.map(async (m): Promise<Weather> => {
-      const { latitude, longitude } = m.location
-      const data = await getJson<WeatherResponse>(
-        `/api/weather?lat=${latitude}&lon=${longitude}`,
-      )
-      return { memberId: m.id, ...data }
-    }),
+// --- Geocoding (ZIP or city name via /api/geocode) ---
+
+export async function geocode(query: string): Promise<WeatherCardConfig> {
+  const result = await getJson<{ label: string; latitude: number; longitude: number }>(
+    `/api/geocode?q=${encodeURIComponent(query)}`,
   )
-  const ok = settled
-    .filter((r): r is PromiseFulfilledResult<Weather> => r.status === 'fulfilled')
-    .map((r) => r.value)
-  if (ok.length === 0) throw new Error('weather: all member lookups failed')
-  return ok
+  return { query, ...result }
+}
+
+// --- Shared settings (Azure Table Storage via /api/settings/{key}) ---
+
+export async function getSetting<T>(key: string): Promise<T | null> {
+  const data = await getJson<{ key: string; value: T | null }>(`/api/settings/${key}`)
+  return data.value
+}
+
+export async function putSetting<T>(key: string, value: T): Promise<void> {
+  const res = await fetch(`/api/settings/${key}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(value),
+  })
+  if (!res.ok) throw new Error(`PUT /api/settings/${key} -> ${res.status}`)
 }
 
 // --- News (Fox News RSS via /api/news) ---
