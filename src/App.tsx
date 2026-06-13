@@ -2,6 +2,7 @@ import AccountMenu from './components/AccountMenu'
 import CalendarCard from './components/CalendarCard'
 import LoginScreen from './components/LoginScreen'
 import NewsCard from './components/NewsCard'
+import NowPlayingSection from './components/NowPlayingSection'
 import StreamingSection from './components/StreamingSection'
 import TheatricalSection from './components/TheatricalSection'
 import WeatherCards from './components/WeatherCards'
@@ -53,6 +54,7 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
       </div>
 
       <StreamingSection />
+      <NowPlayingSection />
       <TheatricalSection releases={theatrical} />
     </div>
   )
