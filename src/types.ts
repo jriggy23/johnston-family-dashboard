@@ -48,6 +48,15 @@ export interface CalendarEvent {
   color: string // member color when matched, else the event's own iCloud color
 }
 
+// A calendar discovered in the configured iCloud account(s), for mapping a
+// member's calendarSource to a real shared-calendar name.
+export interface CalendarInfo {
+  name: string
+  color?: string
+  id?: string
+  account: string
+}
+
 // A family member: their identity, the iCloud calendar their events come from,
 // a highlight color (palette-assigned, or derived from their photo), and an
 // optional uploaded avatar (stored separately in the settings store).

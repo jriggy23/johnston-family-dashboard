@@ -6,6 +6,7 @@
 
 import type {
   CalendarEvent,
+  CalendarInfo,
   NewsItem,
   PointWeather,
   ShowtimeMovie,
@@ -230,4 +231,26 @@ export function mapCalendar(events: CalendarResponse['events']): CalendarEvent[]
 export async function fetchCalendar(days = 14): Promise<CalendarEvent[]> {
   const data = await getJson<CalendarResponse>(`/api/calendar?days=${days}`)
   return mapCalendar(data.events)
+}
+
+// Fetch events within an explicit [start, end) window — used by week navigation
+// so past/future weeks return their own events.
+export async function fetchCalendarRange(start: Date, end: Date): Promise<CalendarEvent[]> {
+  const qs = `start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(
+    end.toISOString(),
+  )}`
+  const data = await getJson<CalendarResponse>(`/api/calendar?${qs}`)
+  return mapCalendar(data.events)
+}
+
+// --- Calendar discovery (GET /api/calendars) ---
+
+interface CalendarsResponse {
+  source: string
+  calendars: CalendarInfo[]
+}
+
+export async function fetchCalendars(): Promise<CalendarInfo[]> {
+  const data = await getJson<CalendarsResponse>('/api/calendars')
+  return data.calendars
 }

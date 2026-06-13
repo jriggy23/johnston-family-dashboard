@@ -123,6 +123,71 @@ h3 {
 }
 
 /* --- Weekly calendar --- */
+.cal-nav {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-nav-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal-nav-btn:hover {
+  border-color: var(--accent);
+}
+
+.cal-range {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 96px;
+  text-align: center;
+}
+
+.cal-off {
+  color: var(--accent);
+}
+
+.cal-edit-btn {
+  margin-left: 4px;
+}
+
+.cal-select {
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  max-width: 160px;
+}
+
+.cal-editor-field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cal-editor-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .cal-legend {
   display: flex;
   flex-wrap: wrap;
@@ -167,6 +232,7 @@ h3 {
 .cal-editor-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 

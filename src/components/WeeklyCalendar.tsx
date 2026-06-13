@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
+import { fetchCalendarRange, fetchCalendars } from '../api/client'
 import { attributeEvents, readableTextColor } from '../data/members'
 import type { FamilyMembersState, MemberWithPhoto } from '../hooks/useFamilyMembers'
 import { processAvatar } from '../lib/avatar'
-import type { CalendarEvent } from '../types'
+import type { CalendarEvent, CalendarInfo } from '../types'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -33,6 +34,12 @@ function timeLabel(iso: string): string {
 
 function monthDay(d: Date): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+function weekOffsetLabel(offset: number): string {
+  if (offset === -1) return 'last week'
+  if (offset === 1) return 'next week'
+  return `${offset > 0 ? '+' : ''}${offset} weeks`
 }
 
 // Faint background tint from a member's hex color, layered over the surface.
@@ -76,14 +83,17 @@ function EventChip({ event, members }: { event: CalendarEvent; members: MemberWi
   )
 }
 
-// Per-member photo editor: pick an image → downscale + derive a highlight color
-// client-side → persist via the settings store. Initials remain the fallback.
-function MemberPhotoEditor({
+// Per-member editor: upload/replace/remove a photo (downscaled + color derived
+// client-side), and map the member to one of the discovered iCloud calendars.
+// Initials remain the fallback avatar.
+function MemberEditor({
   members,
   saveMember,
+  calendars,
 }: {
   members: MemberWithPhoto[]
   saveMember: FamilyMembersState['saveMember']
+  calendars: CalendarInfo[]
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -104,32 +114,55 @@ function MemberPhotoEditor({
 
   return (
     <div className="cal-editor">
-      {members.map((m) => (
-        <div className="cal-editor-row" key={m.id}>
-          <Avatar member={m} size={36} />
-          <span className="cal-editor-name">{m.name}</span>
-          <label className="btn-small">
-            {busy === m.id ? 'Working…' : m.photo ? 'Replace' : 'Upload'}
-            <input
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              disabled={busy !== null}
-              onChange={(e) => onPick(m.id, e.target.files?.[0])}
-            />
-          </label>
-          {m.photo ? (
-            <button
-              type="button"
-              className="btn-small btn-ghost"
-              disabled={busy !== null}
-              onClick={() => saveMember(m.id, {}, null)}
-            >
-              Remove
-            </button>
-          ) : null}
-        </div>
-      ))}
+      {members.map((m) => {
+        // Include the current source as an option even if discovery hasn't run
+        // or doesn't list it, so the select always reflects the saved value.
+        const options = calendars.map((c) => c.name)
+        if (m.calendarSource && !options.includes(m.calendarSource)) {
+          options.unshift(m.calendarSource)
+        }
+        return (
+          <div className="cal-editor-row" key={m.id}>
+            <Avatar member={m} size={36} />
+            <span className="cal-editor-name">{m.name}</span>
+            <label className="cal-editor-field">
+              <span className="cal-editor-label">Calendar</span>
+              <select
+                className="cal-select"
+                value={m.calendarSource}
+                onChange={(e) => saveMember(m.id, { calendarSource: e.target.value })}
+              >
+                {options.length === 0 ? <option value={m.calendarSource}>{m.calendarSource}</option> : null}
+                {options.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="btn-small">
+              {busy === m.id ? 'Working…' : m.photo ? 'Replace' : 'Upload'}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                disabled={busy !== null}
+                onChange={(e) => onPick(m.id, e.target.files?.[0])}
+              />
+            </label>
+            {m.photo ? (
+              <button
+                type="button"
+                className="btn-small btn-ghost"
+                disabled={busy !== null}
+                onClick={() => saveMember(m.id, {}, null)}
+              >
+                Remove
+              </button>
+            ) : null}
+          </div>
+        )
+      })}
       {error ? <div className="weather-error">{error}</div> : null}
     </div>
   )
@@ -147,14 +180,63 @@ export default function WeeklyCalendar({
   saveMember?: FamilyMembersState['saveMember']
 }) {
   const [editing, setEditing] = useState(false)
+  const [calendars, setCalendars] = useState<CalendarInfo[]>([])
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [weekLoading, setWeekLoading] = useState(false)
+  // Cache fetched weeks (offset → events) in a ref so navigating back and forth
+  // doesn't refetch; offset 0 always uses the `events` prop (already loaded).
+  const cacheRef = useRef<Record<number, CalendarEvent[]>>({})
+  const [, bumpRender] = useReducer((x: number) => x + 1, 0)
+
   const now = new Date()
-  const weekStart = startOfWeek(now)
+  const weekStart = addDays(startOfWeek(now), weekOffset * 7)
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const weekEnd = days[6]
 
-  // Attribute events to members, then bucket into day columns. Events outside
-  // the current week (the API returns ~2 weeks) are not shown in this view.
-  const attributed = attributeEvents(events, members)
+  // Fetch the displayed week's events when navigated away from the current week.
+  useEffect(() => {
+    if (weekOffset === 0 || cacheRef.current[weekOffset]) {
+      setWeekLoading(false)
+      return
+    }
+    let active = true
+    setWeekLoading(true)
+    const start = addDays(startOfWeek(new Date()), weekOffset * 7)
+    const end = addDays(start, 7)
+    fetchCalendarRange(start, end)
+      .then((evs) => {
+        if (!active) return
+        cacheRef.current[weekOffset] = evs
+        bumpRender()
+      })
+      .catch(() => {
+        if (!active) return
+        cacheRef.current[weekOffset] = []
+        bumpRender()
+      })
+      .finally(() => active && setWeekLoading(false))
+    return () => {
+      active = false
+    }
+  }, [weekOffset])
+
+  // Load the discoverable calendars once, when the editor is first opened.
+  useEffect(() => {
+    if (!editing || calendars.length > 0) return
+    let active = true
+    fetchCalendars()
+      .then((list) => active && setCalendars(list))
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [editing, calendars.length])
+
+  const sourceEvents = weekOffset === 0 ? events : cacheRef.current[weekOffset] ?? []
+  const isLoading = weekOffset === 0 ? loading : weekLoading && !cacheRef.current[weekOffset]
+
+  // Attribute events to members, then bucket into the 7 day columns.
+  const attributed = attributeEvents(sourceEvents, members)
   const byDay: CalendarEvent[][] = days.map(() => [])
   for (const e of attributed) {
     const d = new Date(e.start)
@@ -170,23 +252,47 @@ export default function WeeklyCalendar({
     <div className="card">
       <div className="card-header">
         <span className="card-title">Family calendar</span>
-        <span className="dim" style={{ marginLeft: 'auto', fontSize: 12 }}>
-          {monthDay(weekStart)} – {monthDay(weekEnd)}
-        </span>
+        <div className="cal-nav">
+          <button
+            type="button"
+            className="cal-nav-btn"
+            onClick={() => setWeekOffset((o) => o - 1)}
+            aria-label="Previous week"
+          >
+            ‹
+          </button>
+          <span className="cal-range">
+            {monthDay(weekStart)} – {monthDay(weekEnd)}
+            {weekOffset !== 0 ? <span className="cal-off"> · {weekOffsetLabel(weekOffset)}</span> : null}
+          </span>
+          <button
+            type="button"
+            className="cal-nav-btn"
+            onClick={() => setWeekOffset((o) => o + 1)}
+            aria-label="Next week"
+          >
+            ›
+          </button>
+          {weekOffset !== 0 ? (
+            <button type="button" className="link-btn" onClick={() => setWeekOffset(0)}>
+              This week
+            </button>
+          ) : null}
+        </div>
         {saveMember ? (
           <button
             type="button"
-            className="link-btn"
+            className="link-btn cal-edit-btn"
             onClick={() => setEditing((v) => !v)}
             aria-expanded={editing}
           >
-            {editing ? 'Done' : 'Edit photos'}
+            {editing ? 'Done' : 'Edit'}
           </button>
         ) : null}
       </div>
 
       {editing && saveMember ? (
-        <MemberPhotoEditor members={members} saveMember={saveMember} />
+        <MemberEditor members={members} saveMember={saveMember} calendars={calendars} />
       ) : (
         <div className="cal-legend">
           {members.map((m) => (
@@ -198,7 +304,7 @@ export default function WeeklyCalendar({
         </div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <div className="dim" style={{ fontSize: 12 }}>Loading…</div>
       ) : (
         <div className="cal-grid">
