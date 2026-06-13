@@ -5,56 +5,41 @@ export default function TheatricalSection({ releases }: { releases: TheatricalRe
     <div className="card">
       <div className="card-header">
         <span className="card-title">Upcoming theatrical releases</span>
+        <span className="dim" style={{ marginLeft: 'auto', fontSize: 12 }}>
+          In theaters soon
+        </span>
       </div>
-      {releases.map((r, i) => (
-        <div
-          key={r.id}
-          style={{
-            display: 'flex',
-            gap: 10,
-            alignItems: 'center',
-            marginBottom: i < releases.length - 1 ? 10 : 0,
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 66,
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--surface-2)',
-              flexShrink: 0,
-              overflow: 'hidden',
-            }}
-          >
-            {r.posterUrl ? (
-              <img
-                src={r.posterUrl}
-                alt=""
-                loading="lazy"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            ) : null}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 500 }}>{r.title}</div>
-            <div className="muted" style={{ fontSize: 12 }}>
-              {r.genre}
+      <div className="grid grid-watch">
+        {releases.map((r) => (
+          <div key={r.id}>
+            <div className="poster">
+              {r.posterUrl ? <img src={r.posterUrl} alt="" loading="lazy" /> : null}
             </div>
+            <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, marginTop: 6 }}>
+              {r.title}
+            </div>
+            {r.genre ? (
+              <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+                {r.genre}
+              </div>
+            ) : null}
+            <span
+              style={{
+                display: 'inline-block',
+                fontSize: 11,
+                padding: '1px 6px',
+                borderRadius: 'var(--radius-md)',
+                marginTop: 3,
+                color: '#efa033',
+                background: '#3a2a10',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {r.releaseDate}
+            </span>
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: '#efa033',
-              background: '#3a2a10',
-              padding: '3px 10px',
-              borderRadius: 'var(--radius-md)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {r.releaseDate}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
