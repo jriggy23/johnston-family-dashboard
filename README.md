@@ -15,7 +15,7 @@ A family dashboard featuring calendars, news, weather, a live family map, and en
 
 - **Frontend:** React + Vite + TypeScript
 - **Backend API:** Azure Functions v4 (TypeScript), linked to the Static Web App
-- **Auth:** Apple Sign In (managed custom OIDC provider on SWA Standard)
+- **Auth:** Apple Sign In (SWA Standard built-in `apple` provider)
 - **CI/CD:** GitHub Actions → Azure Static Web Apps
 - **Testing:** Vitest + Testing Library; ESLint for linting
 
@@ -64,11 +64,15 @@ consolidate everything into one resource with managed auth and an SLA.
 
 **Authentication — Apple Sign In (decided):**
 
-On the Standard plan, "Sign in with Apple" is configured as a **managed custom
-OIDC provider** in Static Web Apps — SWA handles the full login flow:
+On the Standard plan, "Sign in with Apple" uses SWA's **built-in `apple`
+identity provider** — SWA handles the full login flow:
 
-- Apple registered as a custom OpenID Connect provider in
-  `staticwebapp.config.json` (client ID + client secret from app settings).
+- Configured under `auth.identityProviders.apple` in `staticwebapp.config.json`
+  (client ID + client secret from app settings). **Important:** use the built-in
+  `apple` provider, **not** a generic `customOpenIdConnectProviders` entry —
+  Apple requires `response_mode=form_post` when the `name`/`email` scopes are
+  requested, which only the built-in provider sends. The generic OIDC path
+  returns `invalid_request`.
 - SWA manages the redirect, token validation, and session; the signed-in user
   is exposed at `/.auth/me` and login/logout via `/.auth/login/apple` and
   `/.auth/logout`. No hand-rolled OAuth code.
