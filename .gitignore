@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+api/node_modules/
+
+# Build output
+dist/
+api/dist/
+
+# Azure Functions local
+api/local.settings.json
+bin/
+obj/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+
+.idea/
+
+# Test coverage
+coverage/
