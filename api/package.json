@@ -14,7 +14,9 @@
   },
   "dependencies": {
     "@azure/functions": "^4.5.1",
-    "fast-xml-parser": "^4.5.0"
+    "fast-xml-parser": "^4.5.0",
+    "node-ical": "^0.20.1",
+    "tsdav": "^2.1.5"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",

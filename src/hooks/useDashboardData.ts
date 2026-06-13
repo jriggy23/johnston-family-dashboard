@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  fetchCalendar,
   fetchNews,
   fetchStreaming,
   fetchTheatrical,
@@ -7,14 +8,22 @@ import {
 } from '../api/client'
 import {
   familyMembers,
+  mockEvents,
   mockNews,
   mockStreaming,
   mockTheatrical,
   mockWeather,
 } from '../data/mock'
-import type { NewsItem, StreamingTitle, TheatricalRelease, Weather } from '../types'
+import type {
+  CalendarEvent,
+  NewsItem,
+  StreamingTitle,
+  TheatricalRelease,
+  Weather,
+} from '../types'
 
 interface DashboardData {
+  calendar: CalendarEvent[]
   weather: Weather[]
   news: NewsItem[]
   streaming: StreamingTitle[]
@@ -26,6 +35,7 @@ interface DashboardData {
 // quietly keeps the mock fallback so the dashboard always renders.
 export function useDashboardData(): DashboardData {
   const [data, setData] = useState<DashboardData>({
+    calendar: mockEvents,
     weather: mockWeather,
     news: mockNews,
     streaming: mockStreaming,
@@ -40,13 +50,17 @@ export function useDashboardData(): DashboardData {
     ) => {
       fetcher()
         .then((value) => {
-          if (active) setData((prev) => ({ ...prev, [key]: value }))
+          // Empty result (e.g. unconfigured endpoint) keeps the mock fallback.
+          if (active && Array.isArray(value) && value.length > 0) {
+            setData((prev) => ({ ...prev, [key]: value }))
+          }
         })
         .catch(() => {
           /* keep mock fallback */
         })
     }
 
+    load('calendar', () => fetchCalendar())
     load('weather', () => fetchWeatherForMembers(familyMembers))
     load('news', () => fetchNews())
     load('streaming', fetchStreaming)
