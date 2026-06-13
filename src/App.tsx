@@ -19,7 +19,7 @@ function todayLabel(): string {
 }
 
 function Dashboard({ user }: { user: ClientPrincipal }) {
-  const { calendar, news, streaming, theatrical } = useDashboardData()
+  const { calendar, news, theatrical } = useDashboardData()
 
   return (
     <div className="app">
@@ -52,7 +52,7 @@ function Dashboard({ user }: { user: ClientPrincipal }) {
         <NewsCard items={news} />
       </div>
 
-      <StreamingSection titles={streaming} />
+      <StreamingSection />
       <TheatricalSection releases={theatrical} />
     </div>
   )

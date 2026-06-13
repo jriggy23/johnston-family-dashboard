@@ -57,6 +57,8 @@ export interface StreamingTitle {
   service: string
   serviceColor: string
   serviceTextColor: string
+  posterUrl?: string
+  mediaType?: 'movie' | 'tv'
 }
 
 export interface TheatricalRelease {
@@ -64,4 +66,7 @@ export interface TheatricalRelease {
   title: string
   genre: string
   releaseDate: string
+  posterUrl?: string
 }
+
+export type StreamingMode = 'popular' | 'new' | 'trending'
