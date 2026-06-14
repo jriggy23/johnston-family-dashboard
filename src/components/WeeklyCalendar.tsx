@@ -54,8 +54,10 @@ function tint(hex: string, alpha: number): string {
 
 export function Avatar({ member, size = 28 }: { member: MemberWithPhoto; size?: number }) {
   const dim = { width: size, height: size }
-  if (member.photo) {
-    return <img className="cal-avatar" src={member.photo} alt={member.name} style={dim} />
+  // Precedence: manual upload → Contacts photo → colored initials.
+  const photo = member.photo ?? member.contactPhoto
+  if (photo) {
+    return <img className="cal-avatar" src={photo} alt={member.name} style={dim} />
   }
   return (
     <span

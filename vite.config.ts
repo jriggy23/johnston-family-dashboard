@@ -13,6 +13,9 @@ export default defineConfig({
     },
   },
   test: {
+    // Scope vitest to the frontend; the api/ package runs its own node:test suite.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['api/**', 'node_modules/**', 'dist/**'],
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.ts',

@@ -25,6 +25,17 @@ function loadImage(file: File): Promise<HTMLImageElement> {
   })
 }
 
+// Load an image from a same-origin or data: URL (used for Contacts-derived
+// avatars, where we already have the image as a data-URL).
+function loadImageFromSrc(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('image load failed'))
+    img.src = src
+  })
+}
+
 // Average color over sampled, sufficiently-opaque pixels — a stable, cheap proxy
 // for the dominant tone that reads well as a highlight color.
 function representativeColor(ctx: CanvasRenderingContext2D, w: number, h: number): string {
@@ -63,4 +74,22 @@ export async function processAvatar(file: File): Promise<ProcessedAvatar> {
     dataUrl: canvas.toDataURL('image/jpeg', 0.82),
     color: representativeColor(ctx, SIZE, SIZE),
   }
+}
+
+// Derive a representative highlight color from an already-loaded image URL
+// (e.g. a Contacts avatar served by /api/calendar-photo). Reuses the same
+// dominant-tone sampling as uploaded photos so the two paths look consistent.
+// Returns a safe default if the image can't be read (e.g. canvas unavailable).
+export async function dominantColorFromUrl(src: string): Promise<string> {
+  const img = await loadImageFromSrc(src)
+  const canvas = document.createElement('canvas')
+  canvas.width = SIZE
+  canvas.height = SIZE
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return '#1f232c'
+  const scale = Math.max(SIZE / img.width, SIZE / img.height)
+  const w = img.width * scale
+  const h = img.height * scale
+  ctx.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h)
+  return representativeColor(ctx, SIZE, SIZE)
 }

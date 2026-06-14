@@ -254,3 +254,32 @@ export async function fetchCalendars(): Promise<CalendarInfo[]> {
   const data = await getJson<CalendarsResponse>('/api/calendars')
   return data.calendars
 }
+
+// --- Contact avatar (iCloud Contacts photo via GET /api/calendar-photo) ---
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('blob read failed'))
+    reader.readAsDataURL(blob)
+  })
+}
+
+// Fetch the Contacts photo for a calendar owner (matched server-side by name),
+// returned as a data-URL so it can be both rendered and color-sampled. Resolves
+// to null when there's no matching contact/photo (404) or on any error, so the
+// caller silently falls back to colored initials.
+export async function fetchContactPhoto(calendarName: string): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/calendar-photo?cal=${encodeURIComponent(calendarName)}`, {
+      headers: { accept: 'image/*' },
+    })
+    if (!res.ok) return null
+    const blob = await res.blob()
+    if (!blob.size) return null
+    return await blobToDataUrl(blob)
+  } catch {
+    return null
+  }
+}
