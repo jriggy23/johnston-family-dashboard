@@ -31,3 +31,6 @@ coverage/
 # Apple Sign In private key + local secrets
 .secrets/
 *.p8
+
+# Native multiplatform app (tracked in its own repo: jriggy23/johnston-family-dashboard-ios)
+/ios/

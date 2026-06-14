@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions'
 import * as nodeIcal from 'node-ical'
+import { principalFor } from '../lib/auth'
 
 // Reads iCloud calendars over CalDAV and returns upcoming events (personal +
 // any shared calendars in the account). Recurring events are expanded within
@@ -190,6 +191,9 @@ export async function calendar(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
+  const principal = await principalFor(request)
+  if (!principal) return { status: 401, jsonBody: { error: 'unauthorized' } }
+
   const accounts = loadAccounts()
   if (accounts.length === 0) {
     return { jsonBody: { source: 'unconfigured', events: [] } }
@@ -274,9 +278,12 @@ async function fetchAccountCalendars(
 }
 
 export async function calendars(
-  _request: HttpRequest,
+  request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
+  const principal = await principalFor(request)
+  if (!principal) return { status: 401, jsonBody: { error: 'unauthorized' } }
+
   const accounts = loadAccounts()
   if (accounts.length === 0) {
     return { jsonBody: { source: 'unconfigured', calendars: [] } }

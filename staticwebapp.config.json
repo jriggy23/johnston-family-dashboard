@@ -27,8 +27,12 @@
       "allowedRoles": ["anonymous", "authenticated"]
     },
     {
+      "route": "/api/auth/apple",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
       "route": "/api/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
       "route": "/*",

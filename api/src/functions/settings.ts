@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions'
 import { TableClient, RestError } from '@azure/data-tables'
+import { principalFor } from '../lib/auth'
 
 // Shared (family-wide) key/value settings stored in Azure Table Storage.
 // Used so dashboard config (e.g. the weather cards) syncs across devices and
@@ -29,6 +30,9 @@ export async function settings(
   if (!key || !VALID_KEY.test(key)) {
     return { status: 400, jsonBody: { error: 'invalid settings key' } }
   }
+
+  const principal = await principalFor(request)
+  if (!principal) return { status: 401, jsonBody: { error: 'unauthorized' } }
 
   const client = getClient()
   if (!client) {

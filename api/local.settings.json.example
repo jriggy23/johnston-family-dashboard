@@ -4,7 +4,11 @@
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "AzureWebJobsStorage": "",
     "TMDB_API_KEY": "",
-    "ICLOUD_ACCOUNTS": "[{\"label\":\"John\",\"username\":\"you@icloud.com\",\"appPassword\":\"xxxx-xxxx-xxxx-xxxx\"}]"
+    "ICLOUD_ACCOUNTS": "[{\"label\":\"John\",\"username\":\"you@icloud.com\",\"appPassword\":\"xxxx-xxxx-xxxx-xxxx\"}]",
+    "_comment_JWT_SIGNING_SECRET": "32+ char random string used to sign native-app JWTs (HS256)",
+    "JWT_SIGNING_SECRET": "",
+    "_comment_APPLE_NATIVE_BUNDLE_IDS": "Comma-separated list of bundle IDs allowed as the `aud` claim in Apple identity tokens. Defaults to com.jkcons.johnstondashboard.ios,com.jkcons.johnstondashboard.tvos if empty.",
+    "APPLE_NATIVE_BUNDLE_IDS": ""
   },
   "Host": {
     "CORS": "*"

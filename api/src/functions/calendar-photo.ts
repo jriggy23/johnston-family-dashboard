@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions'
 import { matchContact, parseVCards, type ParsedContact } from '../lib/contacts'
+import { principalFor } from '../lib/auth'
 
 // GET /api/calendar-photo?cal=<calendar display name>
 //
@@ -144,6 +145,9 @@ export async function calendarPhoto(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
+  const principal = await principalFor(request)
+  if (!principal) return { status: 401, jsonBody: { error: 'unauthorized' } }
+
   const calName = (request.query.get('cal') ?? request.query.get('name') ?? '').trim()
   if (!calName) return notFound
 
