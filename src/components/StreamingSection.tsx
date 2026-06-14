@@ -3,7 +3,18 @@ import { fetchStreaming, getSetting, putSetting } from '../api/client'
 import { mockStreaming } from '../data/mock'
 import { FAMILY_PROVIDERS } from '../data/providers'
 import { serviceColors } from '../data/serviceColors'
-import type { StreamingMode, StreamingTitle } from '../types'
+import TitleDetailModal from './TitleDetailModal'
+import type { StreamingMode, StreamingTitle, TitleSelector } from '../types'
+
+// Streaming ids are `${mediaType}-${tmdbId}` (see api/watch.ts); derive a detail
+// selector from that, falling back to a title query for mock items without one.
+function selectorFor(t: StreamingTitle): TitleSelector {
+  const idPart = t.id.includes('-') ? t.id.slice(t.id.indexOf('-') + 1) : t.id
+  if (t.mediaType && /^\d+$/.test(idPart)) {
+    return { type: t.mediaType, id: idPart, fallbackTitle: t.title }
+  }
+  return { q: t.title, fallbackTitle: t.title }
+}
 
 const MODE_KEY = 'streamingMode'
 const PROVIDERS_KEY = 'streamingProviders'
@@ -23,6 +34,8 @@ export default function StreamingSection() {
   const [loading, setLoading] = useState(true)
   // Which providers are toggled on. Default: all of the family's providers.
   const [selected, setSelected] = useState<string[]>(DEFAULT_PROVIDERS)
+  // The title whose detail overlay is open, if any.
+  const [detail, setDetail] = useState<TitleSelector | null>(null)
 
   // Load the saved mode + provider selection once. Falls back to defaults if
   // the settings store is unavailable (501) or nothing is saved yet.
@@ -150,7 +163,12 @@ export default function StreamingSection() {
         {visible.map((t) => {
           const badges = t.services.length ? t.services : [t.service]
           return (
-            <div key={t.id}>
+            <button
+              type="button"
+              key={t.id}
+              className="title-card"
+              onClick={() => setDetail(selectorFor(t))}
+            >
               <div className="poster">
                 {t.posterUrl ? (
                   <img src={t.posterUrl} alt="" loading="lazy" />
@@ -179,10 +197,12 @@ export default function StreamingSection() {
                   )
                 })}
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
+
+      {detail && <TitleDetailModal selector={detail} onClose={() => setDetail(null)} />}
     </div>
   )
 }

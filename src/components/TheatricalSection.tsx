@@ -1,4 +1,14 @@
-import type { TheatricalRelease } from '../types'
+import { useState } from 'react'
+import TitleDetailModal from './TitleDetailModal'
+import type { TheatricalRelease, TitleSelector } from '../types'
+
+// Theatrical ids are the bare TMDB movie id (see api/watch.ts theatrical()), so
+// detail can be requested directly; mock items without a numeric id fall back to
+// a title query.
+function selectorFor(r: TheatricalRelease): TitleSelector {
+  if (/^\d+$/.test(r.id)) return { type: 'movie', id: r.id, fallbackTitle: r.title }
+  return { q: r.title, fallbackTitle: r.title }
+}
 
 export default function TheatricalSection({
   releases,
@@ -7,6 +17,8 @@ export default function TheatricalSection({
   releases: TheatricalRelease[]
   loading?: boolean
 }) {
+  const [detail, setDetail] = useState<TitleSelector | null>(null)
+
   return (
     <div className="card">
       <div className="card-header">
@@ -18,7 +30,12 @@ export default function TheatricalSection({
       {loading && <div className="dim" style={{ fontSize: 12 }}>Loading…</div>}
       <div className="grid grid-watch" style={{ display: loading ? 'none' : undefined }}>
         {releases.map((r) => (
-          <div key={r.id}>
+          <button
+            type="button"
+            key={r.id}
+            className="title-card"
+            onClick={() => setDetail(selectorFor(r))}
+          >
             <div className="poster">
               {r.posterUrl ? <img src={r.posterUrl} alt="" loading="lazy" /> : null}
             </div>
@@ -31,9 +48,11 @@ export default function TheatricalSection({
               </div>
             ) : null}
             <span className="release-date-badge">{r.releaseDate}</span>
-          </div>
+          </button>
         ))}
       </div>
+
+      {detail && <TitleDetailModal selector={detail} onClose={() => setDetail(null)} />}
     </div>
   )
 }

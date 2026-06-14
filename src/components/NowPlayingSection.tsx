@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchShowtimes } from '../api/client'
-import type { ShowDay, ShowtimeMovie } from '../types'
+import TitleDetailModal from './TitleDetailModal'
+import type { ShowDay, ShowtimeMovie, TitleSelector } from '../types'
 
 function soonestDay(movie: ShowtimeMovie): ShowDay | undefined {
   const today = movie.days.find((d) => d.label === 'Today' && d.times.length > 0)
@@ -10,6 +11,9 @@ function soonestDay(movie: ShowtimeMovie): ShowDay | undefined {
 export default function NowPlayingSection() {
   const [theater, setTheater] = useState('')
   const [movies, setMovies] = useState<ShowtimeMovie[]>([])
+  // Local now-playing items carry no TMDB id, so the detail overlay resolves
+  // them by title search (see /api/title ?q=).
+  const [detail, setDetail] = useState<TitleSelector | null>(null)
 
   useEffect(() => {
     let active = true
@@ -43,7 +47,12 @@ export default function NowPlayingSection() {
         {movies.map((m) => {
           const day = soonestDay(m)
           return (
-            <div key={m.normalized}>
+            <button
+              type="button"
+              key={m.normalized}
+              className="title-card"
+              onClick={() => setDetail({ q: m.title, fallbackTitle: m.title })}
+            >
               <div className="poster">
                 {m.posterUrl ? <img src={m.posterUrl} alt="" loading="lazy" /> : null}
               </div>
@@ -64,10 +73,12 @@ export default function NowPlayingSection() {
                   </div>
                 </div>
               ) : null}
-            </div>
+            </button>
           )
         })}
       </div>
+
+      {detail && <TitleDetailModal selector={detail} onClose={() => setDetail(null)} />}
     </div>
   )
 }

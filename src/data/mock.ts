@@ -1,4 +1,11 @@
-import type { CalendarEvent, NewsItem, StreamingTitle, TheatricalRelease } from '../types'
+import type {
+  CalendarEvent,
+  NewsItem,
+  StreamingTitle,
+  TheatricalRelease,
+  TitleDetail,
+  TitleSelector,
+} from '../types'
 
 // Placeholder data used until the live APIs are wired in. The family roster now
 // lives in data/members.ts (configurable via the familyMembers setting); weather
@@ -46,3 +53,25 @@ export const mockTheatrical: TheatricalRelease[] = [
   { id: 't2', title: 'The Quiet Hour', genre: 'Thriller', releaseDate: 'Jun 27' },
   { id: 't3', title: 'Paper Moons', genre: 'Family · Animation', releaseDate: 'Jul 3' },
 ]
+
+// Placeholder detail so the clickable detail overlay works in dev (plain `vite
+// dev` with no /api) or when TMDB is unconfigured. Keyed loosely off whatever
+// title/selector was clicked so the overlay shows something sensible.
+export function mockTitleDetail(selector: TitleSelector): TitleDetail {
+  const title = selector.fallbackTitle ?? selector.q ?? 'Sample Title'
+  return {
+    id: `${selector.type ?? 'movie'}-0`,
+    tmdbId: 0,
+    mediaType: selector.type ?? 'movie',
+    title,
+    overview:
+      'Detailed descriptions appear here once the TMDB key is configured. This is sample placeholder text so the detail view renders during local development.',
+    posterUrl: undefined,
+    backdropUrl: undefined,
+    releaseDate: '2026-06-20',
+    year: '2026',
+    runtime: 118,
+    genres: ['Drama', 'Adventure'],
+    ratings: { tmdb: 7.8, imdb: '7.5/10', rottenTomatoes: '85%', metacritic: '72/100' },
+  }
+}
